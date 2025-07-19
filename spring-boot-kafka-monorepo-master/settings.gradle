@@ -1,4 +1,0 @@
-rootProject.name = 'monorepo'
-
-include 'user-api'
-include 'worker'
