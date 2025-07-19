@@ -2,9 +2,6 @@ package com.hello.redis.cache;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hello.redis.cache.CaffeineCache;
-import com.hello.redis.cache.CustomConcurrentMapCache;
-import com.hello.redis.cache.GuavaLoadingCache;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
