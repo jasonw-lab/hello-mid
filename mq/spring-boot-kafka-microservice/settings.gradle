@@ -1,0 +1,10 @@
+rootProject.name = 'monorepo'
+
+include 'user-api'
+include 'worker'
+include 'order-service'
+include 'payment-service'
+include 'inventory-service'
+include 'notification-service'
+include 'transfer-service'
+include 'monitoring-service'

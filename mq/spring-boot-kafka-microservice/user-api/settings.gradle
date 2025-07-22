@@ -1,0 +1,3 @@
+rootProject.name = 'user-api'
+include 'worker'
+project(':worker').projectDir = new File(settingsDir, '../worker')
