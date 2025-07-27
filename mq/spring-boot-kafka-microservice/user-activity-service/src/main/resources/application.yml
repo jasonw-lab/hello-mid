@@ -1,0 +1,31 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: user-activity-service
+  main:
+    banner-mode: console
+  kafka:
+    bootstrap-servers: localhost:29092
+    consumer:
+      auto-offset-reset: earliest
+    streams:
+      application-id: user-activity-streams
+      properties:
+        default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        default.value.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        processing.guarantee: exactly_once_v2
+        state.dir: /tmp/kafka-streams/user-activity-service
+
+user-activity:
+  input-topic: pageview-topic
+  output-topic: suspicious-user-topic
+  window-size-minutes: 5
+  page-view-threshold: 100
+
+logging:
+  level:
+    com.example.useractivityservice: INFO
+    org.apache.kafka: INFO
+    org.apache.kafka.streams: INFO

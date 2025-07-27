@@ -12,7 +12,7 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: com.example.inventoryservice.model,com.example.orderservice.model
+        spring.json.trusted.packages: com.example.inventoryservice.model,com.example.orderservice.model,com.example.paymentservice.model
 
 logging:
   level:
