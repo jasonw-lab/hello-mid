@@ -16,6 +16,7 @@ spring:
 
 monitoring:
   threshold: 1000
+  window-minutes: 5
 
 logging:
   level:

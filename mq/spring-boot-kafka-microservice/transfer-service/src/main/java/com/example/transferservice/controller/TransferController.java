@@ -57,7 +57,7 @@ public class TransferController {
                 .description("Large sample transfer")
                 .build();
         
-        log.info("Created large sample transfer: {}", transfer);
+        log.info("==== Created large sample transfer: {}", transfer);
         return transferService.processTransfer(transfer);
     }
 }

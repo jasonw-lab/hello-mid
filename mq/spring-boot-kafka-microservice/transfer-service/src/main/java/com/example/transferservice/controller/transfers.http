@@ -1,0 +1,26 @@
+### Transfer Service HTTP Requests
+### Usage: In IntelliJ IDEA or any HTTP client that supports .http files, place cursor on a request and run it.
+
+@host = localhost
+@port = 8085
+@baseUrl = http://{{host}}:{{port}}/api/transfers
+
+### Create a transfer (POST /api/transfers)
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "transferId": "{{$uuid}}",
+  "fromAccount": "ACC-1234",
+  "toAccount": "ACC-5678",
+  "amount": 250.75,
+  "transferDate": "{{$datetime iso8601}}",
+  "status": "PENDING",
+  "description": "Test transfer via HTTP file"
+}
+
+### Create and process a sample transfer (GET /api/transfers/sample)
+GET {{baseUrl}}/sample
+
+### Create and process a large sample transfer (GET /api/transfers/large-sample)
+GET {{baseUrl}}/large-sample
