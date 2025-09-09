@@ -1,31 +1,26 @@
 package com.example.monitoringservice.listener;
 
 import com.example.monitoringservice.model.Transfer;
-import com.example.monitoringservice.service.MonitoringService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
+/**
+ * 開発/テスト環境での可観測性向上のためのシンプルなコンシューマ。
+ * なお、リアルタイム監視とアラート生成の本体は Kafka Streams のトポロジで処理されます。
+ */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class TransferListener {
 
-    private final MonitoringService monitoringService;
-
-    @KafkaListener(topics = "monitor-topic", groupId = "${spring.kafka.consumer.group-id}")
+    // 入力トピックは application.yml の monitoring.input-topic を使用（ハードコード禁止）
+    @KafkaListener(topics = "${monitoring.input-topic}", groupId = "${spring.kafka.consumer.group-id}")
     public void handleTransfer(Transfer transfer) {
-        log.info("Received transfer: {}", transfer);
-        
+        // 予期しない例外でリスナーコンテナが落ちないよう、安全にログして処理します
         try {
-            // Monitor the transfer
-            monitoringService.monitorTransfer(transfer)
-                .doOnSuccess(v -> log.info("Transfer monitoring completed for: {}", transfer.getTransferId()))
-                .doOnError(e -> log.error("Error monitoring transfer: {}", transfer.getTransferId(), e))
-                .subscribe();
+            log.info("[Listener] Received transfer: {}", transfer);
         } catch (Exception e) {
-            log.error("Error handling transfer message: {}", transfer, e);
+            log.error("[Listener] Error handling transfer message: {}", transfer, e);
         }
     }
 }

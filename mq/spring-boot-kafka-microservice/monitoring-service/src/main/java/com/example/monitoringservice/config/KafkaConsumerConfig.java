@@ -36,6 +36,7 @@ public class KafkaConsumerConfig {
         return props;
     }
 
+    // ContainerFactory for Transfer payloads (monitor-topic)
     @Bean
     public ConsumerFactory<String, Transfer> consumerFactory() {
         return new DefaultKafkaConsumerFactory<>(
@@ -49,6 +50,23 @@ public class KafkaConsumerConfig {
         ConcurrentKafkaListenerContainerFactory<String, Transfer> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
+        return factory;
+    }
+
+    // ContainerFactory for String payloads (alert-topic)
+    @Bean
+    public ConsumerFactory<String, String> stringConsumerFactory() {
+        return new DefaultKafkaConsumerFactory<>(
+                consumerConfigs(),
+                new StringDeserializer(),
+                new StringDeserializer());
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, String> stringKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, String> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(stringConsumerFactory());
         return factory;
     }
 }

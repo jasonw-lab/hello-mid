@@ -20,10 +20,33 @@ public class TransferController {
 
     private final TransferService transferService;
 
+    // 主要処理ポイント: REST 経由で受け取った Transfer をそのまま Kafka (monitor-topic) へ送信し、
+    // 監視サービス（Kafka Streams）がリアルタイム集計・告警判定を行うデモの入口。
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<Transfer> createTransfer(@RequestBody Transfer transfer) {
         log.info("Received transfer request: {}", transfer);
+        return transferService.processTransfer(transfer);
+    }
+
+    // デモ用の簡易 API: 指定したパラメータで Transfer を作成して送信
+    // 仕様の 'transferMoneyDemo(fromUser, toUser, currency, amount)' に対応。
+    @PostMapping("/transferMoneyDemo")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<Transfer> transferMoneyDemo(@RequestParam("fromUser") String fromUser,
+                                            @RequestParam("toUser") String toUser,
+                                            @RequestParam("currency") String currency,
+                                            @RequestParam("amount") BigDecimal amount) {
+        Transfer transfer = Transfer.builder()
+                .transferId(UUID.randomUUID().toString())
+                .fromAccount(fromUser) // fromUser -> fromAccount
+                .toAccount(toUser)     // toUser   -> toAccount
+                .amount(amount)
+                .transferDate(LocalDateTime.now())
+                .status("COMPLETED")
+                .description("currency=" + currency)
+                .build();
+        log.info("[transferMoneyDemo] Built transfer from params: {}", transfer);
         return transferService.processTransfer(transfer);
     }
     

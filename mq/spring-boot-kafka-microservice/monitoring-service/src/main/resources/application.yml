@@ -13,10 +13,14 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: com.example.monitoringservice.model,com.example.transferservice.model
+    streams:
+      application-id: monitoring-service-streams
 
 monitoring:
-  threshold: 1000
+  threshold: 1000000
   window-minutes: 5
+  input-topic: monitor-topic
+  alert-topic: alert-topic
 
 logging:
   level:
