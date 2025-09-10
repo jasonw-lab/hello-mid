@@ -5,6 +5,7 @@ import com.example.transferservice.service.TransferService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -22,7 +23,7 @@ public class TransferController {
 
     // 主要処理ポイント: REST 経由で受け取った Transfer をそのまま Kafka (monitor-topic) へ送信し、
     // 監視サービス（Kafka Streams）がリアルタイム集計・告警判定を行うデモの入口。
-    @PostMapping
+    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<Transfer> createTransfer(@RequestBody Transfer transfer) {
         log.info("Received transfer request: {}", transfer);
@@ -31,7 +32,7 @@ public class TransferController {
 
     // デモ用の簡易 API: 指定したパラメータで Transfer を作成して送信
     // 仕様の 'transferMoneyDemo(fromUser, toUser, currency, amount)' に対応。
-    @PostMapping("/transferMoneyDemo")
+    @RequestMapping(value = "/transferMoneyDemo", method = {RequestMethod.POST, RequestMethod.GET}, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<Transfer> transferMoneyDemo(@RequestParam("fromUser") String fromUser,
                                             @RequestParam("toUser") String toUser,
@@ -50,7 +51,7 @@ public class TransferController {
         return transferService.processTransfer(transfer);
     }
     
-    @GetMapping("/sample")
+    @GetMapping(value = "/sample", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<Transfer> createSampleTransfer() {
         // Create a sample transfer for testing
         Transfer transfer = Transfer.builder()
@@ -67,7 +68,7 @@ public class TransferController {
         return transferService.processTransfer(transfer);
     }
     
-    @GetMapping("/large-sample")
+    @GetMapping(value = "/large-sample", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<Transfer> createLargeSampleTransfer() {
         // Create a sample transfer with a large amount for testing the monitoring alert
         Transfer transfer = Transfer.builder()

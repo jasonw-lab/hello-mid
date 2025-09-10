@@ -21,6 +21,8 @@ public class AlertListener {
     public void onAlert(String alertPayload) {
         try {
             log.warn("[ALERT_TOPIC] Received alert: {}", alertPayload);
+            log.info("[ALERT_TOPIC] do some alert handling logic here...");
+            log.info("[ALERT_TOPIC] like sending email/SMS or slack notify..");
         } catch (Exception e) {
             log.error("[ALERT_TOPIC] Error handling alert payload: {}", alertPayload, e);
         }

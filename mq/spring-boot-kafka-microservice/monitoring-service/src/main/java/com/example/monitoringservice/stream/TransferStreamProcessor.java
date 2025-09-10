@@ -32,6 +32,7 @@ import java.util.Map;
  * - 前処理: 不正なレコード（null、fromAccount 空白、amount null）を除外
  * - 集計: fromAccount 単位で監視ウィンドウ（monitoring.window-minutes）の合計金額を集計（タンブリング）
  * - アラート: ウィンドウ合計が monitoring.threshold を超過した場合に monitoring.alert-topic へ通知
+ *    ★本番環境では、アラートをメール/SMS/Slack などに通知する仕組みと連携することが多い
  *
  * 出力のアラートは JSON（account,totalAmount,windowStart/End,type を含む）
  *
@@ -96,7 +97,7 @@ public class TransferStreamProcessor {
         // 監視ウィンドウ内で fromAccount 単位に金額の合計を集計
         KTable<Windowed<String>, Double> aggregated = source
                 .selectKey((k, v) -> v.getFromAccount()) // fromAccount で再キー化
-                .groupByKey(Grouped.with(Serdes.String(), /* 値Serdeは推論されるため null */ null))
+                .groupByKey(Grouped.with(Serdes.String(), transferSerde))
                 .windowedBy(windows)
                 .aggregate(
                         () -> 0.0, // 初期値
