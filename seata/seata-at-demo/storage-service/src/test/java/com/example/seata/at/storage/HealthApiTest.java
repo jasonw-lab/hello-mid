@@ -7,7 +7,8 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 
 import static org.hamcrest.Matchers.equalTo;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = {"seata.enabled=false", "spring.main.lazy-initialization=true"})
 class HealthApiTest {
 
     @LocalServerPort
