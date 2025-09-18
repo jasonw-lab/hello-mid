@@ -26,7 +26,11 @@ public class OrderController {
 
     @PostMapping
     public CommonResponse<Order> create(@Valid @RequestBody OrderCreateRequest req) {
-        Order order = orderService.createOrder(req);
+        if (req.getOrderNo() == null || req.getOrderNo().trim().isEmpty()) {
+            // Generate orderNo on server side if client didn't provide one
+            req.setOrderNo(java.util.UUID.randomUUID().toString());
+        }
+        Order order = orderService.placeOrder(req);
         return new CommonResponse<Order>() {{
             setSuccess(true);
             setMessage("OK");

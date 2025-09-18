@@ -25,6 +25,24 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- Seata AT -->
+        <dependency>
+            <groupId>io.seata</groupId>
+            <artifactId>seata-spring-boot-starter</artifactId>
+            <version>${seata.version}</version>
+        </dependency>
+        <!-- Seata Nacos discovery & config -->
+        <dependency>
+            <groupId>io.seata</groupId>
+            <artifactId>seata-discovery-nacos</artifactId>
+            <version>${seata.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.seata</groupId>
+            <artifactId>seata-config-nacos</artifactId>
+            <version>${seata.version}</version>
+        </dependency>
+
         <!-- DB & ORM -->
         <dependency>
             <groupId>com.baomidou</groupId>

@@ -23,6 +23,11 @@ public class OrderCreateRequest {
     @NotNull(message = "amount is required")
     private BigDecimal amount;
 
+    // Idempotent client-provided order number (unique). Optional: if missing, server will generate.
+    @JsonProperty("orderNo")
+    @JsonAlias({"order_no", "orderNO"})
+    private String orderNo;
+
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
     public Long getProductId() { return productId; }
@@ -31,4 +36,6 @@ public class OrderCreateRequest {
     public void setCount(Integer count) { this.count = count; }
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
+    public String getOrderNo() { return orderNo; }
+    public void setOrderNo(String orderNo) { this.orderNo = orderNo; }
 }
