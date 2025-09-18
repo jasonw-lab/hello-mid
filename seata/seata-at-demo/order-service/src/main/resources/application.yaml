@@ -30,3 +30,31 @@ management:
 logging:
   level:
     root: INFO
+
+seata:
+  enabled: true
+  application-id: order-service-at
+  tx-service-group: at_tx_group
+  service:
+    vgroup-mapping:
+      at_tx_group: default
+    grouplist:
+      default: 127.0.0.1:8091
+  registry:
+    type: file
+  config:
+    type: file
+#  registry:
+#    type: nacos
+#    nacos:
+#      server-addr: 127.0.0.1:8848
+#      namespace: ""                 # 必要ならNacosのnamespace IDを設定
+#      group: SEATA_GROUP
+#  config:
+#    type: nacos
+#    nacos:
+#      server-addr: 127.0.0.1:8848
+#      namespace: ""                 # 必要ならNacosのnamespace IDを設定
+#      group: SEATA_GROUP
+  enable-auto-data-source-proxy: true
+  data-source-proxy-mode: AT
