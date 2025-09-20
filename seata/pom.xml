@@ -11,6 +11,7 @@
 
     <modules>
         <module>seata-at-demo</module>
-        <!-- TCC/Saga demos are skeletons for now; add as modules once they become Maven projects -->
+        <module>seata-tcc-demo</module>
+        <!-- Saga demo can be added as a module when code is ready -->
     </modules>
 </project>

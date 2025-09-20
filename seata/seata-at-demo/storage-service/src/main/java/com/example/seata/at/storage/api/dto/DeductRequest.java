@@ -13,8 +13,13 @@ public class DeductRequest {
     @NotNull(message = "count is required")
     private Integer count;
 
+    // Optional business key for TCC orchestration
+    private String orderNo;
+
     public Long getProductId() { return productId; }
     public void setProductId(Long productId) { this.productId = productId; }
     public Integer getCount() { return count; }
     public void setCount(Integer count) { this.count = count; }
+    public String getOrderNo() { return orderNo; }
+    public void setOrderNo(String orderNo) { this.orderNo = orderNo; }
 }

@@ -31,19 +31,24 @@ logging:
   level:
     root: INFO
 
+# Register initializer to load .env, .env-<profile>, or ENV_FILE
+context:
+  initializer:
+    classes: com.example.seata.common.config.DotenvInitializer
+
 seata:
-  enabled: true
-  application-id: account-service-at
-  tx-service-group: at_tx_group
+  enabled: ${SEATA_ENABLED:true}
+  application-id: ${SEATA_APPLICATION_ID:account-service-at}
+  tx-service-group: ${SEATA_TX_SERVICE_GROUP:at_tx_group}
   service:
     vgroup-mapping:
-      at_tx_group: default
+      at_tx_group: ${SEATA_VGROUP_MAPPING_AT_TX_GROUP:default}
     grouplist:
-      default: 127.0.0.1:8091
+      default: ${SEATA_GROUPLIST_DEFAULT:127.0.0.1:8091}
   registry:
-    type: file
+    type: ${SEATA_REGISTRY_TYPE:file}
   config:
-    type: file
+    type: ${SEATA_CONFIG_TYPE:file}
   #  registry:
   #    type: nacos
   #    nacos:
@@ -56,5 +61,5 @@ seata:
   #      server-addr: 127.0.0.1:8848
   #      namespace: ""                 # 必要ならNacosのnamespace IDを設定
   #      group: SEATA_GROUP
-  enable-auto-data-source-proxy: true
-  data-source-proxy-mode: AT
+  enable-auto-data-source-proxy: ${SEATA_ENABLE_AUTO_DATA_SOURCE_PROXY:true}
+  data-source-proxy-mode: ${SEATA_DATA_SOURCE_PROXY_MODE:AT}

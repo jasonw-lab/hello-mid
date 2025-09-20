@@ -4,6 +4,7 @@ import com.example.seata.at.order.api.dto.CommonResponse;
 import com.example.seata.at.order.api.dto.OrderCreateRequest;
 import com.example.seata.at.order.domain.entity.Order;
 import com.example.seata.at.order.service.OrderService;
+import com.example.seata.at.order.service.OrderTccService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -19,9 +20,11 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/orders")
 public class OrderController {
     private final OrderService orderService;
+    private final OrderTccService orderTccService;
 
-    public OrderController(OrderService orderService) {
+    public OrderController(OrderService orderService, OrderTccService orderTccService) {
         this.orderService = orderService;
+        this.orderTccService = orderTccService;
     }
 
     @PostMapping
@@ -31,6 +34,19 @@ public class OrderController {
             req.setOrderNo(java.util.UUID.randomUUID().toString());
         }
         Order order = orderService.placeOrder(req);
+        return new CommonResponse<Order>() {{
+            setSuccess(true);
+            setMessage("OK");
+            setData(order);
+        }};
+    }
+
+    @PostMapping("/tcc")
+    public CommonResponse<Order> createOrderTcc(@Valid @RequestBody OrderCreateRequest req) {
+        if (req.getOrderNo() == null || req.getOrderNo().trim().isEmpty()) {
+            req.setOrderNo(java.util.UUID.randomUUID().toString());
+        }
+        Order order = orderTccService.createOrderTcc(req);
         return new CommonResponse<Order>() {{
             setSuccess(true);
             setMessage("OK");

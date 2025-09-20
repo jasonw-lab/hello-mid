@@ -3,6 +3,7 @@ package com.example.seata.at.storage.api;
 import com.example.seata.at.storage.api.dto.CommonResponse;
 import com.example.seata.at.storage.api.dto.DeductRequest;
 import com.example.seata.at.storage.service.StorageService;
+import com.example.seata.at.storage.service.StorageTccService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,9 +20,11 @@ public class StorageController {
     private static final Logger log = LoggerFactory.getLogger(StorageController.class);
 
     private final StorageService storageService;
+    private final StorageTccService storageTccService;
 
-    public StorageController(StorageService storageService) {
+    public StorageController(StorageService storageService, StorageTccService storageTccService) {
         this.storageService = storageService;
+        this.storageTccService = storageTccService;
     }
 
     @PostMapping("/deduct")
@@ -30,6 +33,17 @@ public class StorageController {
         log.info("Received DeductRequest: productId={}, count={}", req.getProductId(), req.getCount());
         storageService.deduct(req.getProductId(), req.getCount());
         return CommonResponse.ok("deducted");
+    }
+
+    @PostMapping("/deduct/tcc")
+    public CommonResponse<String> deductTcc(@Valid @RequestBody DeductRequest req) {
+        String orderNo = req.getOrderNo();
+        if (orderNo == null || orderNo.isBlank()) {
+            orderNo = java.util.UUID.randomUUID().toString();
+        }
+        log.info("Received DeductRequest TCC: orderNo={}, productId={}, count={}", orderNo, req.getProductId(), req.getCount());
+        storageTccService.tryDeduct(req.getProductId(), req.getCount(), orderNo);
+        return CommonResponse.ok("tcc-try-deducted");
     }
 
     @ExceptionHandler(StorageService.InsufficientStockException.class)

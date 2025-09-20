@@ -14,9 +14,15 @@ public class DebitRequest {
     @NotNull(message = "amount is required")
     private BigDecimal amount;
 
+    // Optional business key for TCC orchestration
+    private String orderNo;
+
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
 
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
+
+    public String getOrderNo() { return orderNo; }
+    public void setOrderNo(String orderNo) { this.orderNo = orderNo; }
 }
