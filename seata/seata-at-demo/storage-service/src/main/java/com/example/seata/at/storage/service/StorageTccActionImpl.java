@@ -26,6 +26,12 @@ public class StorageTccActionImpl implements StorageTccAction {
     @Transactional
     public boolean prepare(BusinessActionContext actionContext, Long productId, Integer count) {
         String xid = actionContext != null ? actionContext.getXid() : io.seata.core.context.RootContext.getXID();
+        if (xid == null || xid.isBlank()) {
+            // When called outside a Seata global transaction, there is no XID bound to the context.
+            // Generate a local XID to satisfy the DB NOT NULL constraint and keep logs traceable.
+            xid = "local-" + java.util.UUID.randomUUID();
+            log.warn("[TCC-Storage] TRY without global transaction. Generated local xid={}", xid);
+        }
         log.info("[TCC-Storage] TRY prepare reserve: xid={}, productId={}, count={}", xid, productId, count);
         StorageTccFreeze existing = freezeMapper.selectOne(new LambdaQueryWrapper<StorageTccFreeze>().eq(StorageTccFreeze::getXid, xid));
         if (existing != null) {

@@ -34,6 +34,12 @@ public class AccountTccActionImpl implements AccountTccAction {
     @Transactional
     public boolean prepare(BusinessActionContext actionContext, Long userId, BigDecimal amount) {
         String xid = actionContext != null ? actionContext.getXid() : io.seata.core.context.RootContext.getXID();
+        if (xid == null || xid.isBlank()) {
+            // When called outside a Seata global transaction, there is no XID bound to the context.
+            // Generate a local XID to satisfy the DB NOT NULL constraint and keep logs traceable.
+            xid = "local-" + java.util.UUID.randomUUID();
+            log.warn("[TCC-Account] TRY without global transaction. Generated local xid={}", xid);
+        }
         log.info("[TCC-Account] TRY prepare reserve: xid={}, userId={}, amount={}", xid, userId, amount);
         // サスペンション対策: 事前にCANCELが存在する場合はTRYを拒否する
         AccountTccFreeze existing = freezeMapper.selectOne(new LambdaQueryWrapper<AccountTccFreeze>().eq(AccountTccFreeze::getXid, xid));
