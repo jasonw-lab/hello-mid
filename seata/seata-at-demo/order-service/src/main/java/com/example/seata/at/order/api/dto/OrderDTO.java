@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
-public class OrderCreateRequest {
+public class OrderDTO {
     @NotNull(message = "userId is required")
     @JsonProperty("userId")
     @JsonAlias({"user_id", "userID"})

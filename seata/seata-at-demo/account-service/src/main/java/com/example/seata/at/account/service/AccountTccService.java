@@ -1,55 +1,45 @@
 package com.example.seata.at.account.service;
 
-import io.seata.core.context.RootContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
+import io.seata.rm.tcc.api.BusinessActionContext;
+import io.seata.rm.tcc.api.BusinessActionContextParameter;
+import io.seata.rm.tcc.api.TwoPhaseBusinessAction;
 
 import java.math.BigDecimal;
 
 /**
- * Account の TCC を呼び出す薄いサービスクラス。
- * - 実際の Try/Confirm/Cancel の本体は AccountTccAction（Seata のコールバック対象）が担います。
- * - 本クラスはビジネス層から TRY を起動するためのエントリのみ提供します。
+ * Account TCC Service Interface
  */
-@Service
-public class AccountTccService {
-    private static final Logger log = LoggerFactory.getLogger(AccountTccService.class);
-
-    private final AccountTccAction accountTccAction;
-
-    public AccountTccService(AccountTccAction accountTccAction) {
-        this.accountTccAction = accountTccAction;
-    }
-
+public interface AccountTccService {
+    
     /**
-     * TRY フェーズの起動。
-     * - 実体は AccountTccAction#prepare に委譲され、Seata により後続の Confirm/Cancel がコールバックされます。
+     * 残高チェック
+     * @param userId ユーザーID
+     * @param amount 金額
+     * @return 残高が十分かどうか
      */
-    public void tryDebit(Long userId, BigDecimal amount, String orderNo) {
-        String xid = null;
-        try { xid = RootContext.getXID(); } catch (Throwable ignore) {}
-        log.info("[TCC-TRY][ACCOUNT] xid={}, orderNo={}, userId={}, amount={}", xid, orderNo, userId, amount);
-        accountTccAction.prepare(null, userId, amount);
-    }
-
+    boolean checkBalance(Long userId, BigDecimal amount);
+    
     /**
-     * CONFIRM フェーズ（参考）。
-     * - 実運用では Seata が自動で commit コールバックするため、ここではログのみ。
+     * TCC Try: 残高を凍結
+     * @param userId ユーザーID
+     * @param amount 金額
+     * @return 成功かどうか
      */
-    public void confirmDebit(Long userId, BigDecimal amount, String orderNo) {
-        String xid = null;
-        try { xid = RootContext.getXID(); } catch (Throwable ignore) {}
-        log.info("[TCC-CONFIRM][ACCOUNT] xid={}, orderNo={}, userId={}, amount={}", xid, orderNo, userId, amount);
-    }
-
+    @TwoPhaseBusinessAction(name = "debitAccount", commitMethod = "confirm", rollbackMethod = "cancel")
+    boolean tryDebit(@BusinessActionContextParameter(paramName = "userId") Long userId,
+                     @BusinessActionContextParameter(paramName = "amount") BigDecimal amount);
+    
     /**
-     * CANCEL フェーズ（参考）。
-     * - 実運用では Seata が自動で cancel コールバックするため、ここではログのみ。
+     * TCC Confirm: 凍結を確定
+     * @param context ビジネスアクションコンテキスト
+     * @return 成功かどうか
      */
-    public void cancelDebit(Long userId, BigDecimal amount, String orderNo) {
-        String xid = null;
-        try { xid = RootContext.getXID(); } catch (Throwable ignore) {}
-        log.info("[TCC-CANCEL][ACCOUNT] xid={}, orderNo={}, userId={}, amount={}", xid, orderNo, userId, amount);
-    }
+    boolean confirm(BusinessActionContext context);
+    
+    /**
+     * TCC Cancel: 凍結を取り消し
+     * @param context ビジネスアクションコンテキスト
+     * @return 成功かどうか
+     */
+    boolean cancel(BusinessActionContext context);
 }

@@ -1,49 +1,43 @@
 package com.example.seata.at.storage.service;
 
-import io.seata.core.context.RootContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
+import io.seata.rm.tcc.api.BusinessActionContext;
+import io.seata.rm.tcc.api.BusinessActionContextParameter;
+import io.seata.rm.tcc.api.TwoPhaseBusinessAction;
 
 /**
- * Storage の TCC を呼び出す薄いサービスクラス。
- * - 実際の Try/Confirm/Cancel の本体は StorageTccAction（Seata のコールバック対象）が担います。
- * - 本クラスはビジネス層から TRY を起動するためのエントリのみ提供します。
+ * Storage TCC Service Interface
  */
-@Service
-public class StorageTccService {
-    private static final Logger log = LoggerFactory.getLogger(StorageTccService.class);
-
-    private final StorageTccAction storageTccAction;
-
-    public StorageTccService(StorageTccAction storageTccAction) {
-        this.storageTccAction = storageTccAction;
-    }
-
+public interface StorageTccService {
+    
     /**
-         * TRY フェーズの起動。
-         * - 実体は StorageTccAction#prepare に委譲され、Seata により後続の Confirm/Cancel がコールバックされます。
-         */
-        public void tryDeduct(Long productId, Integer count, String orderNo) {
-        String xid = null;
-        try { xid = RootContext.getXID(); } catch (Throwable ignore) {}
-        log.info("[TCC-TRY][STORAGE] xid={}, orderNo={}, productId={}, count={}", xid, orderNo, productId, count);
-        storageTccAction.prepare(null, productId, count);
-    }
-
+     * 在庫チェック
+     * @param productId 商品ID
+     * @param count 数量
+     * @return 在庫が十分かどうか
+     */
+    boolean checkStock(Long productId, Integer count);
+    
     /**
-         * CONFIRM フェーズ（参考）。
-         * - 実運用では Seata が自動で commit コールバックするため、ここではログのみ。
-         */
-        public void confirmDeduct(Long productId, Integer count, String orderNo) {
-        String xid = null;
-        try { xid = RootContext.getXID(); } catch (Throwable ignore) {}
-        log.info("[TCC-CONFIRM][STORAGE] xid={}, orderNo={}, productId={}, count={}", xid, orderNo, productId, count);
-    }
-
-    public void cancelDeduct(Long productId, Integer count, String orderNo) {
-        String xid = null;
-        try { xid = RootContext.getXID(); } catch (Throwable ignore) {}
-        log.info("[TCC-CANCEL][STORAGE] xid={}, orderNo={}, productId={}, count={}", xid, orderNo, productId, count);
-    }
+     * TCC Try: 在庫を凍結
+     * @param productId 商品ID
+     * @param count 数量
+     * @return 成功かどうか
+     */
+    @TwoPhaseBusinessAction(name = "deductInventory", commitMethod = "confirm", rollbackMethod = "cancel")
+    boolean tryDeduct(@BusinessActionContextParameter(paramName = "productId") Long productId,
+                      @BusinessActionContextParameter(paramName = "count") Integer count);
+    
+    /**
+     * TCC Confirm: 凍結を確定
+     * @param context ビジネスアクションコンテキスト
+     * @return 成功かどうか
+     */
+    boolean confirm(BusinessActionContext context);
+    
+    /**
+     * TCC Cancel: 凍結を取り消し
+     * @param context ビジネスアクションコンテキスト
+     * @return 成功かどうか
+     */
+    boolean cancel(BusinessActionContext context);
 }

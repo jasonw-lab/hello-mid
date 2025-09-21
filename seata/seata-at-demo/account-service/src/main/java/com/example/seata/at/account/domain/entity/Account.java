@@ -15,6 +15,7 @@ public class Account {
     private BigDecimal total;
     private BigDecimal used;
     private BigDecimal residue;
+    private BigDecimal frozen;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
@@ -32,6 +33,9 @@ public class Account {
 
     public BigDecimal getResidue() { return residue; }
     public void setResidue(BigDecimal residue) { this.residue = residue; }
+
+    public BigDecimal getFrozen() { return frozen; }
+    public void setFrozen(BigDecimal frozen) { this.frozen = frozen; }
 
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }

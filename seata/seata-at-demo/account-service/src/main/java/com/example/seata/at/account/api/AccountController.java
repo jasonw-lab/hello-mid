@@ -2,7 +2,8 @@ package com.example.seata.at.account.api;
 
 import com.example.seata.at.account.api.dto.CommonResponse;
 import com.example.seata.at.account.api.dto.DebitRequest;
-import com.example.seata.at.account.service.AccountService;
+import com.example.seata.at.account.service.AccountATService;
+import com.example.seata.at.account.service.AccountATServiceImpl;
 import com.example.seata.at.account.service.AccountTccService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -19,11 +20,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AccountController {
     private static final Logger log = LoggerFactory.getLogger(AccountController.class);
 
-    private final AccountService accountService;
+    private final AccountATService accountATService;
     private final AccountTccService accountTccService;
 
-    public AccountController(AccountService accountService, AccountTccService accountTccService) {
-        this.accountService = accountService;
+    public AccountController(AccountATService accountATService, AccountTccService accountTccService) {
+        this.accountATService = accountATService;
         this.accountTccService = accountTccService;
     }
 
@@ -31,7 +32,7 @@ public class AccountController {
     public CommonResponse<String> debit(@Valid @RequestBody DebitRequest req) {
         // Log received request body at INFO level
         log.info("Received DebitRequest: userId={}, amount={}", req.getUserId(), req.getAmount());
-        accountService.debit(req.getUserId(), req.getAmount());
+        accountATService.debit(req.getUserId(), req.getAmount());
         return CommonResponse.ok("debited");
     }
 
@@ -41,13 +42,15 @@ public class AccountController {
         if (orderNo == null || orderNo.isBlank()) {
             orderNo = java.util.UUID.randomUUID().toString();
         }
-        log.info("Received DebitRequest TCC: orderNo={}, userId={}, amount={}", orderNo, req.getUserId(), req.getAmount());
-        accountTccService.tryDebit(req.getUserId(), req.getAmount(), orderNo);
+        String xid = null;
+        try { xid = io.seata.core.context.RootContext.getXID(); } catch (Throwable ignore) {}
+        log.info("Received DebitRequest TCC: orderNo={}, userId={}, amount={}, xid={}", orderNo, req.getUserId(), req.getAmount(), xid);
+        accountTccService.tryDebit(req.getUserId(), req.getAmount());
         return CommonResponse.ok("tcc-try-debited");
     }
 
-    @ExceptionHandler(AccountService.InsufficientBalanceException.class)
-    public ResponseEntity<CommonResponse<Void>> handleBalance(AccountService.InsufficientBalanceException ex) {
+    @ExceptionHandler(AccountATServiceImpl.InsufficientBalanceException.class)
+    public ResponseEntity<CommonResponse<Void>> handleBalance(AccountATServiceImpl.InsufficientBalanceException ex) {
         return ResponseEntity.badRequest().body(CommonResponse.fail(ex.getMessage()));
     }
 }

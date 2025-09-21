@@ -2,7 +2,7 @@ spring:
   application:
     name: order-service-at
   profiles:
-    active: at
+    active: tcc
   datasource:
     url: jdbc:mysql://localhost:3307/seata_order?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC
     username: root

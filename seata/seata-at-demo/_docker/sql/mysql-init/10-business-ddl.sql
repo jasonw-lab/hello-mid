@@ -82,30 +82,3 @@ CREATE TABLE `undo_log` (
   UNIQUE KEY `ux_undo_log` (`xid`, `branch_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
--- TCC freeze tables for production-ready TCC implementation
-USE `seata_storage`;
-CREATE TABLE IF NOT EXISTS `t_storage_tcc_freeze` (
-  `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
-  `xid` VARCHAR(100) NOT NULL,
-  `product_id` BIGINT NULL,
-  `count` INT NULL,
-  `status` TINYINT NOT NULL COMMENT '0: TRY, 1: COMMITTED, 2: CANCELED',
-  `create_time` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  `update_time` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY `uk_storage_freeze_xid` (`xid`),
-  KEY `idx_storage_freeze_product` (`product_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-USE `seata_account`;
-CREATE TABLE IF NOT EXISTS `t_account_tcc_freeze` (
-  `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
-  `xid` VARCHAR(100) NOT NULL,
-  `user_id` BIGINT NULL,
-  `amount` DECIMAL(18,2) NULL,
-  `status` TINYINT NOT NULL COMMENT '0: TRY, 1: COMMITTED, 2: CANCELED',
-  `create_time` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  `update_time` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY `uk_account_freeze_xid` (`xid`),
-  KEY `idx_account_freeze_user` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

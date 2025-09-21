@@ -9,10 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 
 @Service
-public class AccountService {
+public class AccountATServiceImpl implements AccountATService {
     private final AccountMapper accountMapper;
 
-    public AccountService(AccountMapper accountMapper) {
+    public AccountATServiceImpl(AccountMapper accountMapper) {
         this.accountMapper = accountMapper;
     }
 
@@ -27,6 +27,13 @@ public class AccountService {
         if (updated == 0) {
             throw new InsufficientBalanceException("Insufficient balance for userId=" + userId + ", amount=" + amount);
         }
+    }
+
+    public boolean checkBalance(Long userId, BigDecimal amount) {
+        Account account = accountMapper.selectOne(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Account>()
+                .eq(Account::getUserId, userId));
+        return account != null && account.getResidue().compareTo(amount) >= 0;
     }
 
     public static class InsufficientBalanceException extends RuntimeException {

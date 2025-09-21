@@ -2,7 +2,8 @@ package com.example.seata.at.storage.api;
 
 import com.example.seata.at.storage.api.dto.CommonResponse;
 import com.example.seata.at.storage.api.dto.DeductRequest;
-import com.example.seata.at.storage.service.StorageService;
+import com.example.seata.at.storage.service.StorageATService;
+import com.example.seata.at.storage.service.StorageATServiceImpl;
 import com.example.seata.at.storage.service.StorageTccService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -19,11 +20,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class StorageController {
     private static final Logger log = LoggerFactory.getLogger(StorageController.class);
 
-    private final StorageService storageService;
+    private final StorageATService storageATService;
     private final StorageTccService storageTccService;
 
-    public StorageController(StorageService storageService, StorageTccService storageTccService) {
-        this.storageService = storageService;
+    public StorageController(StorageATService storageATService, StorageTccService storageTccService) {
+        this.storageATService = storageATService;
         this.storageTccService = storageTccService;
     }
 
@@ -31,7 +32,7 @@ public class StorageController {
     public CommonResponse<String> deduct(@Valid @RequestBody DeductRequest req) {
         // Log received request body at INFO level
         log.info("Received DeductRequest: productId={}, count={}", req.getProductId(), req.getCount());
-        storageService.deduct(req.getProductId(), req.getCount());
+        storageATService.deduct(req.getProductId(), req.getCount());
         return CommonResponse.ok("deducted");
     }
 
@@ -41,13 +42,15 @@ public class StorageController {
         if (orderNo == null || orderNo.isBlank()) {
             orderNo = java.util.UUID.randomUUID().toString();
         }
-        log.info("Received DeductRequest TCC: orderNo={}, productId={}, count={}", orderNo, req.getProductId(), req.getCount());
-        storageTccService.tryDeduct(req.getProductId(), req.getCount(), orderNo);
+        String xid = null;
+        try { xid = io.seata.core.context.RootContext.getXID(); } catch (Throwable ignore) {}
+        log.info("Received DeductRequest TCC: orderNo={}, productId={}, count={}, xid={}", orderNo, req.getProductId(), req.getCount(), xid);
+        storageTccService.tryDeduct(req.getProductId(), req.getCount());
         return CommonResponse.ok("tcc-try-deducted");
     }
 
-    @ExceptionHandler(StorageService.InsufficientStockException.class)
-    public ResponseEntity<CommonResponse<Void>> handleStock(StorageService.InsufficientStockException ex) {
+    @ExceptionHandler(StorageATServiceImpl.InsufficientStockException.class)
+    public ResponseEntity<CommonResponse<Void>> handleStock(StorageATServiceImpl.InsufficientStockException ex) {
         return ResponseEntity.badRequest().body(CommonResponse.fail(ex.getMessage()));
     }
 }

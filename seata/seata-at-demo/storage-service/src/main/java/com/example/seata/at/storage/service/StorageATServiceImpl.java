@@ -7,10 +7,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class StorageService {
+public class StorageATServiceImpl implements StorageATService {
     private final StorageMapper storageMapper;
 
-    public StorageService(StorageMapper storageMapper) {
+    public StorageATServiceImpl(StorageMapper storageMapper) {
         this.storageMapper = storageMapper;
     }
 
@@ -25,6 +25,13 @@ public class StorageService {
         if (updated == 0) {
             throw new InsufficientStockException("Insufficient stock for productId=" + productId + ", count=" + count);
         }
+    }
+
+    public boolean checkStock(Long productId, Integer count) {
+        Storage storage = storageMapper.selectOne(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Storage>()
+                .eq(Storage::getProductId, productId));
+        return storage != null && storage.getResidue() >= count;
     }
 
     public static class InsufficientStockException extends RuntimeException {

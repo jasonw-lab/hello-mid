@@ -3,7 +3,7 @@ package com.example.seata.at.order.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.example.seata.at.order.api.dto.CommonResponse;
-import com.example.seata.at.order.api.dto.OrderCreateRequest;
+import com.example.seata.at.order.api.dto.OrderDTO;
 import com.example.seata.at.order.domain.entity.Order;
 import com.example.seata.at.order.domain.mapper.OrderMapper;
 import io.seata.spring.annotation.GlobalTransactional;
@@ -15,21 +15,21 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 @Service
-public class OrderService {
-    private static final Logger log = LoggerFactory.getLogger(OrderService.class);
+public class OrderATServiceImpl implements OrderATService {
+    private static final Logger log = LoggerFactory.getLogger(OrderATServiceImpl.class);
     private final OrderMapper orderMapper;
     private final RestTemplate restTemplate;
 
     private static final String STORAGE_BASE_URL = "http://localhost:8082";
     private static final String ACCOUNT_BASE_URL = "http://localhost:8083";
 
-    public OrderService(OrderMapper orderMapper, RestTemplate restTemplate) {
+    public OrderATServiceImpl(OrderMapper orderMapper, RestTemplate restTemplate) {
         this.orderMapper = orderMapper;
         this.restTemplate = restTemplate;
     }
 
     @GlobalTransactional(name = "order-create-tx", rollbackFor = Exception.class)
-    public Order placeOrder(OrderCreateRequest req) {
+    public Order placeOrder(OrderDTO req) {
         String xid = null;
         try {
             xid = io.seata.core.context.RootContext.getXID();
