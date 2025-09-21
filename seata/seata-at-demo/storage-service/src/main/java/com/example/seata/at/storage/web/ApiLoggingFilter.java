@@ -8,8 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.ContentCachingRequestWrapper;
-import org.springframework.web.util.WebUtils;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -26,31 +24,21 @@ public class ApiLoggingFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String uri = request.getRequestURI();
+        // Only log our APIs
         if (!uri.startsWith("/api")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        ContentCachingRequestWrapper wrapped = WebUtils.getNativeRequest(request, ContentCachingRequestWrapper.class);
-        if (wrapped == null) {
-            wrapped = new ContentCachingRequestWrapper(request);
-        }
+        // Wrap request to allow multiple reads and log BEFORE controller executes
+        CachedBodyHttpServletRequest wrapped = new CachedBodyHttpServletRequest(request);
+        logRequest(wrapped, null);
 
-        boolean logged = false;
-        try {
-            filterChain.doFilter(wrapped, response);
-        } catch (Exception ex) {
-            logRequest(wrapped, ex);
-            logged = true;
-            throw ex;
-        } finally {
-            if (!logged) {
-                logRequest(wrapped, null);
-            }
-        }
+        // Continue filter chain with wrapped request so controller can read the body normally
+        filterChain.doFilter(wrapped, response);
     }
 
-    private void logRequest(ContentCachingRequestWrapper request, Exception ex) {
+    private void logRequest(HttpServletRequest request, Exception ex) throws IOException {
         String method = request.getMethod();
         String uri = request.getRequestURI();
         String query = request.getQueryString();
@@ -70,13 +58,13 @@ public class ApiLoggingFilter extends OncePerRequestFilter {
                 .collect(Collectors.joining(", ", "{", "}"));
     }
 
-    private String extractBody(ContentCachingRequestWrapper request) {
+    private String extractBody(HttpServletRequest request) throws IOException {
         String contentType = request.getContentType();
         if (contentType == null) return "";
         if (!contentType.contains("application/json") && !contentType.contains("application/x-www-form-urlencoded")) {
-            return "";
+            return ""; // avoid logging binary/multipart
         }
-        byte[] buf = request.getContentAsByteArray();
+        byte[] buf = request.getInputStream().readAllBytes();
         if (buf.length == 0) return "";
         Charset cs = request.getCharacterEncoding() != null ? Charset.forName(request.getCharacterEncoding()) : StandardCharsets.UTF_8;
         return new String(buf, cs);
