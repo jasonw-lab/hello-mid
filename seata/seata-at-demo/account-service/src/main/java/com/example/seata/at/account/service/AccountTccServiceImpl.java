@@ -19,6 +19,10 @@ import java.math.BigDecimal;
 public class AccountTccServiceImpl implements AccountTccService {
     private static final Logger log = LoggerFactory.getLogger(AccountTccServiceImpl.class);
 
+    private static final String STATUS_PENDING = "PENDING";
+    private static final String STATUS_SUCCESS = "SUCCESS";
+    private static final String STATUS_FAILED = "FAILED";
+
     private final TccAccountMapper tccAccountMapper;
 
     public AccountTccServiceImpl(TccAccountMapper tccAccountMapper) {
@@ -40,9 +44,9 @@ public class AccountTccServiceImpl implements AccountTccService {
      */
     @Override
     @Transactional
-    public boolean tryDebit(Long userId, BigDecimal amount) {
+    public boolean tryDebit(Long userId, BigDecimal amount, Long orderId) {
         String xid = RootContext.getXID();
-        log.info("=== TCC TRY (Account) === xid={}, userId={}, amount={}", xid, userId, amount);
+        log.info("=== TCC TRY (Account) === xid={}, userId={}, amount={}, orderId={}", xid, userId, amount, orderId);
         
         // 冪等性チェック
         TccAccount existing = tccAccountMapper.selectOne(
@@ -66,19 +70,21 @@ public class AccountTccServiceImpl implements AccountTccService {
             // 新しいTCCレコードを作成
             TccAccount tccAccount = new TccAccount();
             tccAccount.setXid(xid);
+            tccAccount.setOrderId(orderId);
             tccAccount.setUserId(userId);
             tccAccount.setTotal(BigDecimal.ZERO); // 初期値
             tccAccount.setUsed(BigDecimal.ZERO); // 初期値
             tccAccount.setResidue(BigDecimal.ZERO); // 初期値
             tccAccount.setFrozen(amount);
-            tccAccount.setStatus(0); // PENDING
+            tccAccount.setStatus(STATUS_PENDING); // PENDING
             tccAccountMapper.insert(tccAccount);
         } else {
             // 既存のTCCレコードを更新
             existingTccAccount.setXid(xid);
+            existingTccAccount.setOrderId(orderId);
             existingTccAccount.setFrozen(existingTccAccount.getFrozen().add(amount));
             existingTccAccount.setResidue(existingTccAccount.getResidue().subtract(amount));
-            existingTccAccount.setStatus(0); // PENDING
+            existingTccAccount.setStatus(STATUS_PENDING); // PENDING
             tccAccountMapper.updateById(existingTccAccount);
         }
         
@@ -94,7 +100,9 @@ public class AccountTccServiceImpl implements AccountTccService {
     public boolean confirm(BusinessActionContext context) {
         String xid = context.getXid();
         Long orderId = (Long) context.getActionContext("orderId");
-        log.info("=== TCC CONFIRM (Account) === xid={}, orderId={}", xid, orderId);
+//        String orderNo = String.valueOf( context.getActionContext("orderNo"));
+        String userId = String.valueOf( context.getActionContext("userId"));
+        log.info("=== TCC CONFIRM (Account) === xid={},  orderId={}, userId={}", xid, orderId, userId);
         
         TccAccount tccAccount = tccAccountMapper.selectOne(
             new LambdaQueryWrapper<TccAccount>().eq(TccAccount::getXid, xid));
@@ -104,17 +112,19 @@ public class AccountTccServiceImpl implements AccountTccService {
             return true;
         }
         
-        if (tccAccount.getStatus() == 1) {
+        if (STATUS_SUCCESS.equals(tccAccount.getStatus())) {
             log.info("CONFIRM already executed (idempotent): xid={}", xid);
             return true;
         }
-        
+
+        tccAccount.setOrderId(orderId);
+
         // 凍結分を実際の使用分に移動
         tccAccount.setUsed(tccAccount.getUsed().add(tccAccount.getFrozen()));
         tccAccount.setFrozen(BigDecimal.ZERO); // 凍結分をクリア
         
         // ステータスを確定に更新
-        tccAccount.setStatus(1); // SUCCESS
+        tccAccount.setStatus(STATUS_SUCCESS); // SUCCESS
         tccAccountMapper.updateById(tccAccount);
         
         log.info("CONFIRM completed: 残高減算を確定しました");
@@ -140,7 +150,7 @@ public class AccountTccServiceImpl implements AccountTccService {
             return true;
         }
         
-        if (tccAccount.getStatus() == 2) {
+        if (STATUS_FAILED.equals(tccAccount.getStatus())) {
             log.info("CANCEL already executed (idempotent): xid={}", xid);
             return true;
         }
@@ -150,7 +160,7 @@ public class AccountTccServiceImpl implements AccountTccService {
         tccAccount.setFrozen(BigDecimal.ZERO); // 凍結分をクリア
         
         // ステータスをキャンセルに更新
-        tccAccount.setStatus(2); // FAILED
+        tccAccount.setStatus(STATUS_FAILED); // FAILED
         tccAccountMapper.updateById(tccAccount);
         
         log.info("CANCEL completed: 凍結を取り消しました");

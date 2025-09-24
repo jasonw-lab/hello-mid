@@ -10,3 +10,4 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface TccOrderMapper extends BaseMapper<TccOrder> {
 }
+

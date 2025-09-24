@@ -3,16 +3,16 @@ package com.example.seata.at.order.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.seata.at.order.api.dto.CommonResponse;
 import com.example.seata.at.order.api.dto.OrderDTO;
-import com.example.seata.at.order.domain.entity.Order;
+import com.example.seata.at.order.client.AccountTccClient;
+import com.example.seata.at.order.client.StorageTccClient;
+import com.example.seata.at.order.client.dto.DebitTccRequest;
+import com.example.seata.at.order.client.dto.DeductTccRequest;
 import com.example.seata.at.order.domain.entity.TccOrder;
-import com.example.seata.at.order.domain.mapper.OrderMapper;
 import com.example.seata.at.order.domain.mapper.TccOrderMapper;
 import io.seata.rm.tcc.api.BusinessActionContext;
-import io.seata.spring.annotation.GlobalTransactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 /**
  * Order TCC Service Implementation
@@ -20,22 +20,19 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class OrderTccServiceImpl implements OrderTccService {
     private static final Logger log = LoggerFactory.getLogger(OrderTccServiceImpl.class);
-//    private final OrderMapper orderMapper;
     private final TccOrderMapper orderMapper;
-    private final RestTemplate restTemplate;
+    private final StorageTccClient storageTccClient;
+    private final AccountTccClient accountTccClient;
 
-    private static final String STORAGE_BASE_URL = "http://localhost:8082";
-    private static final String ACCOUNT_BASE_URL = "http://localhost:8083";
-
-    public OrderTccServiceImpl(TccOrderMapper orderMapper, RestTemplate restTemplate) {
-//        this.orderMapper = orderMapper;
+    public OrderTccServiceImpl(TccOrderMapper orderMapper, StorageTccClient storageTccClient, AccountTccClient accountTccClient) {
         this.orderMapper = orderMapper;
-        this.restTemplate = restTemplate;
+        this.storageTccClient = storageTccClient;
+        this.accountTccClient = accountTccClient;
     }
 
     @Override
 //    @GlobalTransactional(name = "order-create-tcc-tx", rollbackFor = Exception.class)
-    public TccOrder tryCreate(OrderDTO req, Long orderId) {
+    public TccOrder tryCreate(OrderDTO req, String orderNo) {
         String xid = null;
         try { xid = io.seata.core.context.RootContext.getXID(); } catch (Throwable ignore) {}
         log.info("=== TCC オーダー作成開始 === orderNo={}, userId={}, productId={}, count={}, amount={}, xid={}",
@@ -72,8 +69,8 @@ public class OrderTccServiceImpl implements OrderTccService {
         deductReq.setCount(req.getCount());
         
         try {
-            CommonResponse<?> storageRes = restTemplate.postForObject(
-                STORAGE_BASE_URL + "/api/storage/deduct/tcc", deductReq, CommonResponse.class);
+            log.info("--- Storage TCC Try 呼び出し ---productId= {}, orderNo= {},count= {} ",deductReq.getProductId(),deductReq.getOrderNo(),deductReq.getCount());
+            CommonResponse<String> storageRes = storageTccClient.tryDeduct(deductReq);
             if (storageRes == null || !Boolean.TRUE.equals(storageRes.isSuccess())) {
                 throw new RuntimeException("Storage TCC try failed: " + (storageRes == null ? "null" : storageRes.getMessage()));
             }
@@ -87,12 +84,12 @@ public class OrderTccServiceImpl implements OrderTccService {
         log.info("--- Account TCC Try 呼び出し ---");
         DebitTccRequest debitReq = new DebitTccRequest();
         debitReq.setOrderNo(req.getOrderNo());
+        debitReq.setOrderId(tccOrder.getId());
         debitReq.setUserId(req.getUserId());
         debitReq.setAmount(req.getAmount());
         
         try {
-            CommonResponse<?> accountRes = restTemplate.postForObject(
-                ACCOUNT_BASE_URL + "/api/account/debit/tcc", debitReq, CommonResponse.class);
+            CommonResponse<String> accountRes = accountTccClient.tryDebit(debitReq);
             if (accountRes == null || !Boolean.TRUE.equals(accountRes.isSuccess())) {
                 throw new RuntimeException("Account TCC try failed: " + (accountRes == null ? "null" : accountRes.getMessage()));
             }
@@ -125,10 +122,42 @@ public class OrderTccServiceImpl implements OrderTccService {
 
     @Override
     public boolean confirm(BusinessActionContext context) {
-        log.info("===  OrderTccServiceImpl confirm ");
+        String xid = context != null ? context.getXid() : null;
+        log.info("===  OrderTccServiceImpl confirm, xid={} ", xid);
+        String orderNo = context.getActionContext("orderNo")!=null ? context.getActionContext("orderNo").toString() : null;
 
-        Long orderId = (Long) context.getActionContext("orderId");
-        TccOrder order = orderMapper.selectById(orderId);
+        log.info("===  OrderTccServiceImpl confirm, orderNo={} ", orderNo);
+
+        // Prefer xid to locate the TCC order; 'orderId' may be null if it wasn't passed in TRY phase
+        TccOrder order = null;
+        try {
+            if (xid != null) {
+                order = orderMapper.selectOne(new LambdaQueryWrapper<TccOrder>().eq(TccOrder::getXid, xid));
+            }
+            if (order == null) {
+                Object idObj = context != null ? context.getActionContext("orderId") : null;
+                if (idObj != null) {
+                    Long orderId = (idObj instanceof Number) ? ((Number) idObj).longValue() : null;
+                    if (orderId != null) {
+                        order = orderMapper.selectById(orderId);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("confirm: failed to load TCC order, xid={}, err={}", xid, e.getMessage(), e);
+        }
+
+        if (order == null) {
+            // Idempotent: if the order record is missing, treat as success to avoid endless retries
+            log.warn("confirm: TCC order not found by xid={}, treat as idempotent success", xid);
+            return true;
+        }
+
+        if ("CONFIRMED".equals(order.getStatus())) {
+            log.info("confirm: already CONFIRMED for xid={}, idempotent", xid);
+            return true;
+        }
+
         order.setStatus("CONFIRMED");
         orderMapper.updateById(order);
         return true;
@@ -136,35 +165,41 @@ public class OrderTccServiceImpl implements OrderTccService {
 
     @Override
     public boolean cancel(BusinessActionContext context) {
-        log.info("===  OrderTccServiceImpl cancel ");
-        Long orderId = (Long) context.getActionContext("orderId");
-        TccOrder order = orderMapper.selectById(orderId);
+        String xid = context != null ? context.getXid() : null;
+        String orderNo = context.getActionContext("orderNo")!=null ? context.getActionContext("orderNo").toString() : null;
+        log.info("===  OrderTccServiceImpl cancel, xid={} ", xid);
+        log.info("===  OrderTccServiceImpl cancel, orderNo={} ", orderNo);
+
+        TccOrder order = null;
+        try {
+            if (xid != null) {
+                order = orderMapper.selectOne(new LambdaQueryWrapper<TccOrder>().eq(TccOrder::getXid, xid));
+            }
+            if (order == null) {
+                Object idObj = context != null ? context.getActionContext("orderId") : null;
+                if (idObj != null) {
+                    Long orderId = (idObj instanceof Number) ? ((Number) idObj).longValue() : null;
+                    if (orderId != null) {
+                        order = orderMapper.selectById(orderId);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("cancel: failed to load TCC order, xid={}, err={}", xid, e.getMessage(), e);
+        }
+
+        if (order == null) {
+            log.warn("cancel: TCC order not found by xid={}, treat as idempotent success", xid);
+            return true;
+        }
+
+        if ("CANCELLED".equals(order.getStatus())) {
+            log.info("cancel: already CANCELLED for xid={}, idempotent", xid);
+            return true;
+        }
+
         order.setStatus("CANCELLED");
         orderMapper.updateById(order);
         return true;
-    }
-
-    // Local DTOs for cross-service TCC endpoints
-    public static class DeductTccRequest {
-        private String orderNo;
-        private Long productId;
-        private Integer count;
-        public String getOrderNo() { return orderNo; }
-        public void setOrderNo(String orderNo) { this.orderNo = orderNo; }
-        public Long getProductId() { return productId; }
-        public void setProductId(Long productId) { this.productId = productId; }
-        public Integer getCount() { return count; }
-        public void setCount(Integer count) { this.count = count; }
-    }
-    public static class DebitTccRequest {
-        private String orderNo;
-        private Long userId;
-        private java.math.BigDecimal amount;
-        public String getOrderNo() { return orderNo; }
-        public void setOrderNo(String orderNo) { this.orderNo = orderNo; }
-        public Long getUserId() { return userId; }
-        public void setUserId(Long userId) { this.userId = userId; }
-        public java.math.BigDecimal getAmount() { return amount; }
-        public void setAmount(java.math.BigDecimal amount) { this.amount = amount; }
     }
 }

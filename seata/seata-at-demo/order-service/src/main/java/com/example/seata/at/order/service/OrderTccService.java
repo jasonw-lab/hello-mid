@@ -4,6 +4,7 @@ import com.example.seata.at.order.api.dto.OrderDTO;
 import com.example.seata.at.order.domain.entity.TccOrder;
 import io.seata.rm.tcc.api.BusinessActionContext;
 import io.seata.rm.tcc.api.BusinessActionContextParameter;
+import io.seata.rm.tcc.api.LocalTCC;
 import io.seata.rm.tcc.api.TwoPhaseBusinessAction;
 
 /**
@@ -18,10 +19,11 @@ import io.seata.rm.tcc.api.TwoPhaseBusinessAction;
 //     */
 //    Order tryCreate(OrderCreateRequest req);
 //}
-
+@LocalTCC
 public interface OrderTccService {
     @TwoPhaseBusinessAction(name = "OrderTccAction", commitMethod = "confirm", rollbackMethod = "cancel")
-    TccOrder tryCreate(OrderDTO orderDTO, @BusinessActionContextParameter(paramName = "orderId") Long orderId);
+//    TccOrder tryCreate(OrderDTO orderDTO, @BusinessActionContextParameter(paramName = "orderId") Long orderId);
+    TccOrder tryCreate(OrderDTO orderDTO, @BusinessActionContextParameter(paramName = "orderNo") String orderNo);
 
     boolean confirm(BusinessActionContext context);
 

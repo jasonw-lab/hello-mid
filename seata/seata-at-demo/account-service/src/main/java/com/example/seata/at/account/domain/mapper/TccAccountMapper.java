@@ -10,3 +10,4 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface TccAccountMapper extends BaseMapper<TccAccount> {
 }
+

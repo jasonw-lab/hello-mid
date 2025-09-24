@@ -38,14 +38,11 @@ public class AccountController {
 
     @PostMapping("/debit/tcc")
     public CommonResponse<String> debitTcc(@Valid @RequestBody DebitRequest req) {
-        String orderNo = req.getOrderNo();
-        if (orderNo == null || orderNo.isBlank()) {
-            orderNo = java.util.UUID.randomUUID().toString();
-        }
+        Long orderId = req.getOrderId();
         String xid = null;
         try { xid = io.seata.core.context.RootContext.getXID(); } catch (Throwable ignore) {}
-        log.info("Received DebitRequest TCC: orderNo={}, userId={}, amount={}, xid={}", orderNo, req.getUserId(), req.getAmount(), xid);
-        accountTccService.tryDebit(req.getUserId(), req.getAmount());
+        log.info("Received DebitRequest TCC: orderId={}, userId={}, amount={}, xid={}", orderId, req.getUserId(), req.getAmount(), xid);
+        accountTccService.tryDebit(req.getUserId(), req.getAmount(), orderId);
         return CommonResponse.ok("tcc-try-debited");
     }
 

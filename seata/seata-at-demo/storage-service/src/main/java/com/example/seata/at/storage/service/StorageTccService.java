@@ -2,11 +2,13 @@ package com.example.seata.at.storage.service;
 
 import io.seata.rm.tcc.api.BusinessActionContext;
 import io.seata.rm.tcc.api.BusinessActionContextParameter;
+import io.seata.rm.tcc.api.LocalTCC;
 import io.seata.rm.tcc.api.TwoPhaseBusinessAction;
 
 /**
  * Storage TCC Service Interface
  */
+@LocalTCC
 public interface StorageTccService {
     
     /**

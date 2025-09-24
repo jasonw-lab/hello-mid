@@ -2,6 +2,7 @@ package com.example.seata.at.account.service;
 
 import io.seata.rm.tcc.api.BusinessActionContext;
 import io.seata.rm.tcc.api.BusinessActionContextParameter;
+import io.seata.rm.tcc.api.LocalTCC;
 import io.seata.rm.tcc.api.TwoPhaseBusinessAction;
 
 import java.math.BigDecimal;
@@ -9,6 +10,7 @@ import java.math.BigDecimal;
 /**
  * Account TCC Service Interface
  */
+@LocalTCC
 public interface AccountTccService {
     
     /**
@@ -27,7 +29,9 @@ public interface AccountTccService {
      */
     @TwoPhaseBusinessAction(name = "debitAccount", commitMethod = "confirm", rollbackMethod = "cancel")
     boolean tryDebit(@BusinessActionContextParameter(paramName = "userId") Long userId,
-                     @BusinessActionContextParameter(paramName = "amount") BigDecimal amount);
+                     @BusinessActionContextParameter(paramName = "amount") BigDecimal amount,
+//                     @BusinessActionContextParameter(paramName = "orderNo") Long orderNo),
+                     @BusinessActionContextParameter(paramName = "orderId") Long orderId);
     
     /**
      * TCC Confirm: 凍結を確定

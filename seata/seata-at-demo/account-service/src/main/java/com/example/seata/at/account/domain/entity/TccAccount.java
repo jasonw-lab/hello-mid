@@ -19,6 +19,8 @@ public class TccAccount {
     
     private String xid;
     
+    private Long orderId;
+    
     private Long userId;
     
     private BigDecimal total;
@@ -29,9 +31,10 @@ public class TccAccount {
     
     private BigDecimal frozen;
     
-    private Integer status; // 0: PENDING, 1: SUCCESS, 2: FAILED
+    private String status; // PENDING, SUCCESS, FAILED
     
     private LocalDateTime createTime;
-    
+
     private LocalDateTime updateTime;
 }
+

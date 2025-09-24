@@ -49,7 +49,7 @@ public class OrderController {
         if (orderDTO.getOrderNo() == null || orderDTO.getOrderNo().trim().isEmpty()) {
             orderDTO.setOrderNo(java.util.UUID.randomUUID().toString());
         }
-        TccOrder order =  orderTccService.tryCreate(orderDTO,null);
+        TccOrder order =  orderTccService.tryCreate(orderDTO,orderDTO.getOrderNo());
         return new CommonResponse<TccOrder>() {{
             setSuccess(true);
             setMessage("OK");

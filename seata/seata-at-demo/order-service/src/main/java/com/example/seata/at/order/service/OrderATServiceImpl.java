@@ -7,6 +7,7 @@ import com.example.seata.at.order.api.dto.OrderDTO;
 import com.example.seata.at.order.domain.entity.Order;
 import com.example.seata.at.order.domain.mapper.OrderMapper;
 import io.seata.spring.annotation.GlobalTransactional;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
@@ -15,19 +16,18 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 @Service
+@RequiredArgsConstructor
 public class OrderATServiceImpl implements OrderATService {
     private static final Logger log = LoggerFactory.getLogger(OrderATServiceImpl.class);
+
     private final OrderMapper orderMapper;
     private final RestTemplate restTemplate;
 
     private static final String STORAGE_BASE_URL = "http://localhost:8082";
     private static final String ACCOUNT_BASE_URL = "http://localhost:8083";
 
-    public OrderATServiceImpl(OrderMapper orderMapper, RestTemplate restTemplate) {
-        this.orderMapper = orderMapper;
-        this.restTemplate = restTemplate;
-    }
 
+    @Override
     @GlobalTransactional(name = "order-create-tx", rollbackFor = Exception.class)
     public Order placeOrder(OrderDTO req) {
         String xid = null;
