@@ -43,6 +43,17 @@
             <artifactId>seata-spring-boot-starter</artifactId>
             <version>${seata.version}</version>
         </dependency>
+        <!-- Seata Saga Engine -->
+        <dependency>
+            <groupId>io.seata</groupId>
+            <artifactId>seata-saga-engine</artifactId>
+            <version>${seata.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.seata</groupId>
+            <artifactId>seata-saga-statelang</artifactId>
+            <version>${seata.version}</version>
+        </dependency>
         <!-- Seata Nacos discovery & config -->
         <dependency>
             <groupId>io.seata</groupId>

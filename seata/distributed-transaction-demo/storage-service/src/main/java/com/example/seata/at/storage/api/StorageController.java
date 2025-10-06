@@ -5,6 +5,7 @@ import com.example.seata.at.storage.api.dto.DeductRequest;
 import com.example.seata.at.storage.service.StorageATService;
 import com.example.seata.at.storage.service.StorageATServiceImpl;
 import com.example.seata.at.storage.service.StorageTccService;
+import com.example.seata.at.storage.service.StorageSagaService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,10 +23,12 @@ public class StorageController {
 
     private final StorageATService storageATService;
     private final StorageTccService storageTccService;
+    private final StorageSagaService storageSagaService;
 
-    public StorageController(StorageATService storageATService, StorageTccService storageTccService) {
+    public StorageController(StorageATService storageATService, StorageTccService storageTccService, StorageSagaService storageSagaService) {
         this.storageATService = storageATService;
         this.storageTccService = storageTccService;
+        this.storageSagaService = storageSagaService;
     }
 
     @PostMapping("/deduct")
@@ -47,6 +50,19 @@ public class StorageController {
         log.info("Received DeductRequest TCC: orderNo={}, productId={}, count={}, xid={}", orderNo, req.getProductId(), req.getCount(), xid);
         storageTccService.tryDeduct(req.getProductId(), req.getCount());
         return CommonResponse.ok("tcc-try-deducted");
+    }
+
+    @PostMapping("/deduct/saga")
+    public CommonResponse<String> deductSaga(@Valid @RequestBody DeductRequest req) {
+        String orderNo = req.getOrderNo();
+        if (orderNo == null || orderNo.isBlank()) {
+            orderNo = java.util.UUID.randomUUID().toString();
+        }
+        String xid = null;
+        try { xid = io.seata.core.context.RootContext.getXID(); } catch (Throwable ignore) {}
+        log.info("Received DeductRequest SAGA: orderNo={}, productId={}, count={}, xid={}", orderNo, req.getProductId(), req.getCount(), xid);
+        storageSagaService.deduct(req.getProductId(), req.getCount(), orderNo);
+        return CommonResponse.ok("saga-deducted");
     }
 
     @ExceptionHandler(StorageATServiceImpl.InsufficientStockException.class)

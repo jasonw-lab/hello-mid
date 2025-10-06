@@ -21,9 +21,12 @@ public class DebitRequest {
 //    @BusinessActionContextParameter(paramName = "orderNo")
 //    private String orderNo;
 
-    // New: Numeric orderId to be persisted in tcc_account
+    // Numeric orderId (used in TCC). For Saga we prefer orderNo, add both.
     @BusinessActionContextParameter(paramName = "orderId")
     private Long orderId;
+
+    // Optional business key for Saga orchestration
+    private String orderNo;
 
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
@@ -34,4 +37,7 @@ public class DebitRequest {
 
     public Long getOrderId() { return orderId; }
     public void setOrderId(Long orderId) { this.orderId = orderId; }
+
+    public String getOrderNo() { return orderNo; }
+    public void setOrderNo(String orderNo) { this.orderNo = orderNo; }
 }

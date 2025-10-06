@@ -36,6 +36,8 @@ public class AccountATServiceImpl implements AccountATService {
         return account != null && account.getResidue().compareTo(amount) >= 0;
     }
 
+    // Note: refund is part of Saga service to avoid changing AT service contract
+
     public static class InsufficientBalanceException extends RuntimeException {
         public InsufficientBalanceException(String message) { super(message); }
     }

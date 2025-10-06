@@ -6,7 +6,9 @@ import com.example.seata.at.order.domain.entity.Order;
 import com.example.seata.at.order.domain.entity.TccOrder;
 import com.example.seata.at.order.service.OrderATService;
 import com.example.seata.at.order.service.OrderTccService;
+import com.example.seata.at.order.service.OrderSagaService;
 import io.seata.spring.annotation.GlobalTransactional;
+import io.seata.saga.engine.StateMachineEngine;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -23,10 +25,15 @@ import java.util.stream.Collectors;
 public class OrderController {
     private final OrderATService orderATService;
     private final OrderTccService orderTccService;
+    private final StateMachineEngine stateMachineEngine;
+    private final OrderSagaService orderSagaService;
 
-    public OrderController(OrderATService orderATService, OrderTccService orderTccService) {
+    public OrderController(OrderATService orderATService, OrderTccService orderTccService, StateMachineEngine stateMachineEngine, OrderSagaService orderSagaService) {
         this.orderATService = orderATService;
         this.orderTccService = orderTccService;
+        // StateMachineEngine is injected but not used directly; kept for future extensions
+        this.stateMachineEngine = stateMachineEngine;
+        this.orderSagaService = orderSagaService;
     }
 
     @PostMapping
@@ -55,6 +62,34 @@ public class OrderController {
             setMessage("OK");
             setData(order);
         }};
+    }
+
+    @PostMapping("/saga")
+    @GlobalTransactional
+    public CommonResponse<Order> createOrderSaga(@Valid @RequestBody OrderDTO orderDTO) {
+        if (orderDTO.getOrderNo() == null || orderDTO.getOrderNo().trim().isEmpty()) {
+            orderDTO.setOrderNo(java.util.UUID.randomUUID().toString());
+        }
+        Order result = orderSagaService.startOrderCreateSaga(orderDTO);
+        boolean finalSuccess = true;
+        return new CommonResponse<Order>() {{
+            setSuccess(finalSuccess);
+            setMessage(finalSuccess ? "OK" : "FAILED");
+            setData(result);
+        }};
+    }
+
+    @PostMapping("/saga/sample")
+    @GlobalTransactional
+    public CommonResponse<Void> runSagaSample(@Valid @RequestBody OrderDTO orderDTO) {
+        if (orderDTO.getOrderNo() == null || orderDTO.getOrderNo().trim().isEmpty()) {
+            orderDTO.setOrderNo(java.util.UUID.randomUUID().toString());
+        }
+        boolean success = orderSagaService.startSampleReduceInventoryAndBalance(orderDTO);
+        CommonResponse<Void> res = new CommonResponse<>();
+        res.setSuccess(success);
+        res.setMessage(success ? "OK" : "FAILED");
+        return res;
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

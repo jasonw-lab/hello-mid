@@ -1,7 +1,5 @@
 package com.example.seata.at.storage.service;
 
-import java.math.BigDecimal;
-
 /**
  * Storage AT Service Interface
  */
@@ -21,4 +19,5 @@ public interface StorageATService {
      * @return 在庫が十分かどうか
      */
     boolean checkStock(Long productId, Integer count);
+
 }

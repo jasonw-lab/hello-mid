@@ -1,0 +1,50 @@
+{
+  "Name": "order_create_saga",
+  "Comment": "Create order via Saga: storage deduct -> account debit -> create order",
+  "StartState": "StorageDeduct",
+  "Version": "0.0.1",
+  "States": {
+    "StorageDeduct": {
+      "Type": "ServiceTask",
+      "ServiceName": "orderSagaActions",
+      "MethodName": "storageDeduct",
+      "CompensateState": "CompensateStorageDeduct",
+      "Next": "AccountDebit"
+    },
+    "AccountDebit": {
+      "Type": "ServiceTask",
+      "ServiceName": "orderSagaActions",
+      "MethodName": "accountDebit",
+      "CompensateState": "CompensateAccountDebit",
+      "Next": "CreateOrder"
+    },
+    "CreateOrder": {
+      "Type": "ServiceTask",
+      "ServiceName": "orderSagaActions",
+      "MethodName": "createOrder",
+      "CompensateState": "CompensateCreateOrder",
+      "End": true
+    },
+    "CompensateStorageDeduct": {
+      "Type": "ServiceTask",
+      "ServiceName": "orderSagaActions",
+      "MethodName": "compensateStorageDeduct",
+      "IsCompensate": true
+    },
+    "CompensateAccountDebit": {
+      "Type": "ServiceTask",
+      "ServiceName": "orderSagaActions",
+      "MethodName": "compensateAccountDebit",
+      "IsCompensate": true
+    },
+    "CompensateCreateOrder": {
+      "Type": "ServiceTask",
+      "ServiceName": "orderSagaActions",
+      "MethodName": "compensateCreateOrder",
+      "IsCompensate": true
+    }
+  }
+}
+
+
+

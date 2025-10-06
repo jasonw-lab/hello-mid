@@ -21,4 +21,6 @@ public interface AccountATService {
      * @return 残高が十分かどうか
      */
     boolean checkBalance(Long userId, BigDecimal amount);
+
+    // Note: refund is provided by Saga service to keep AT contract unchanged
 }

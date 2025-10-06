@@ -34,6 +34,8 @@ public class StorageATServiceImpl implements StorageATService {
         return storage != null && storage.getResidue() >= count;
     }
 
+    // Note: refund is part of Saga service to avoid changing AT service contract
+
     public static class InsufficientStockException extends RuntimeException {
         public InsufficientStockException(String message) { super(message); }
     }

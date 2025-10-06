@@ -5,6 +5,7 @@ import com.example.seata.at.account.api.dto.DebitRequest;
 import com.example.seata.at.account.service.AccountATService;
 import com.example.seata.at.account.service.AccountATServiceImpl;
 import com.example.seata.at.account.service.AccountTccService;
+import com.example.seata.at.account.service.AccountSagaService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,10 +23,12 @@ public class AccountController {
 
     private final AccountATService accountATService;
     private final AccountTccService accountTccService;
+    private final AccountSagaService accountSagaService;
 
-    public AccountController(AccountATService accountATService, AccountTccService accountTccService) {
+    public AccountController(AccountATService accountATService, AccountTccService accountTccService, AccountSagaService accountSagaService) {
         this.accountATService = accountATService;
         this.accountTccService = accountTccService;
+        this.accountSagaService = accountSagaService;
     }
 
     @PostMapping("/debit")
@@ -44,6 +47,19 @@ public class AccountController {
         log.info("Received DebitRequest TCC: orderId={}, userId={}, amount={}, xid={}", orderId, req.getUserId(), req.getAmount(), xid);
         accountTccService.tryDebit(req.getUserId(), req.getAmount(), orderId);
         return CommonResponse.ok("tcc-try-debited");
+    }
+
+    @PostMapping("/debit/saga")
+    public CommonResponse<String> debitSaga(@Valid @RequestBody DebitRequest req) {
+        String orderNo = req.getOrderNo();
+        if (orderNo == null || orderNo.isBlank()) {
+            orderNo = java.util.UUID.randomUUID().toString();
+        }
+        String xid = null;
+        try { xid = io.seata.core.context.RootContext.getXID(); } catch (Throwable ignore) {}
+        log.info("Received DebitRequest SAGA: orderNo={}, userId={}, amount={}, xid={}", orderNo, req.getUserId(), req.getAmount(), xid);
+        accountSagaService.debit(req.getUserId(), req.getAmount(), orderNo);
+        return CommonResponse.ok("saga-debited");
     }
 
     @ExceptionHandler(AccountATServiceImpl.InsufficientBalanceException.class)
