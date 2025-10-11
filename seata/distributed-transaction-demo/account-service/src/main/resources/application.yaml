@@ -2,7 +2,7 @@ spring:
   application:
     name: account-service-at
   profiles:
-    active: tcc
+    active: saga
   datasource:
     url: jdbc:mysql://localhost:3307/seata_account?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC
     username: root

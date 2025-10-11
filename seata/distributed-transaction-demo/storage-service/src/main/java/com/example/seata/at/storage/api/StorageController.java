@@ -65,6 +65,19 @@ public class StorageController {
         return CommonResponse.ok("saga-deducted");
     }
 
+    @PostMapping("/compensate/saga")
+    public CommonResponse<String> compensateSaga(@Valid @RequestBody DeductRequest req) {
+        String orderNo = req.getOrderNo();
+        if (orderNo == null || orderNo.isBlank()) {
+            orderNo = java.util.UUID.randomUUID().toString();
+        }
+        String xid = null;
+        try { xid = io.seata.core.context.RootContext.getXID(); } catch (Throwable ignore) {}
+        log.info("Received CompensateRequest SAGA: orderNo={}, productId={}, count={}, xid={}", orderNo, req.getProductId(), req.getCount(), xid);
+        storageSagaService.compensate(req.getProductId(), req.getCount(), orderNo);
+        return CommonResponse.ok("saga-compensated");
+    }
+
     @ExceptionHandler(StorageATServiceImpl.InsufficientStockException.class)
     public ResponseEntity<CommonResponse<Void>> handleStock(StorageATServiceImpl.InsufficientStockException ex) {
         return ResponseEntity.badRequest().body(CommonResponse.fail(ex.getMessage()));

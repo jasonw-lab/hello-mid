@@ -2,7 +2,10 @@ spring:
   application:
     name: order-service-at
   profiles:
-    active: tcc
+    active: saga
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.groovy.template.GroovyTemplateAutoConfiguration
   datasource:
     url: jdbc:mysql://localhost:3307/seata_order?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC
     username: root

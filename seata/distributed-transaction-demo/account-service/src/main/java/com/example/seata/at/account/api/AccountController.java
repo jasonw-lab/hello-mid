@@ -62,6 +62,19 @@ public class AccountController {
         return CommonResponse.ok("saga-debited");
     }
 
+    @PostMapping("/compensate/saga")
+    public CommonResponse<String> compensateSaga(@Valid @RequestBody DebitRequest req) {
+        String orderNo = req.getOrderNo();
+        if (orderNo == null || orderNo.isBlank()) {
+            orderNo = java.util.UUID.randomUUID().toString();
+        }
+        String xid = null;
+        try { xid = io.seata.core.context.RootContext.getXID(); } catch (Throwable ignore) {}
+        log.info("Received CompensateRequest SAGA: orderNo={}, userId={}, amount={}, xid={}", orderNo, req.getUserId(), req.getAmount(), xid);
+        accountSagaService.compensate(req.getUserId(), req.getAmount(), orderNo);
+        return CommonResponse.ok("saga-compensated");
+    }
+
     @ExceptionHandler(AccountATServiceImpl.InsufficientBalanceException.class)
     public ResponseEntity<CommonResponse<Void>> handleBalance(AccountATServiceImpl.InsufficientBalanceException ex) {
         return ResponseEntity.badRequest().body(CommonResponse.fail(ex.getMessage()));

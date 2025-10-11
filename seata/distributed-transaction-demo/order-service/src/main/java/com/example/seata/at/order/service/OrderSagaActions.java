@@ -77,8 +77,13 @@ public class OrderSagaActions {
         Long productId = toLong(ctx.get("productId"));
         Integer count = toInt(ctx.get("count"));
         log.info("[SAGA] compensateStorageDeduct orderNo={}, productId={}, count={}", orderNo, productId, count);
-        // Storage compensation is executed automatically by storage service when called by saga framework (optional no-op here)
-        return true;
+        var body = new java.util.HashMap<String, Object>();
+        body.put("orderNo", orderNo);
+        body.put("productId", productId);
+        body.put("count", count);
+        Map<?, ?> res = restTemplate.postForObject(STORAGE_BASE_URL + "/api/storage/compensate/saga", body, Map.class);
+        Object success = res == null ? null : res.get("success");
+        return Boolean.TRUE.equals(success);
     }
 
     public boolean compensateAccountDebit(Map<String, Object> ctx) {
@@ -86,8 +91,13 @@ public class OrderSagaActions {
         Long userId = toLong(ctx.get("userId"));
         BigDecimal amount = toBigDecimal(ctx.get("amount"));
         log.info("[SAGA] compensateAccountDebit orderNo={}, userId={}, amount={}", orderNo, userId, amount);
-        // Account compensation is executed by account service (optional no-op here)
-        return true;
+        var body = new java.util.HashMap<String, Object>();
+        body.put("orderNo", orderNo);
+        body.put("userId", userId);
+        body.put("amount", amount);
+        Map<?, ?> res = restTemplate.postForObject(ACCOUNT_BASE_URL + "/api/account/compensate/saga", body, Map.class);
+        Object success = res == null ? null : res.get("success");
+        return Boolean.TRUE.equals(success);
     }
 
     public boolean compensateCreateOrder(Map<String, Object> ctx) {

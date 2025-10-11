@@ -8,7 +8,6 @@ import com.example.seata.at.order.service.OrderATService;
 import com.example.seata.at.order.service.OrderTccService;
 import com.example.seata.at.order.service.OrderSagaService;
 import io.seata.spring.annotation.GlobalTransactional;
-import io.seata.saga.engine.StateMachineEngine;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -25,14 +24,11 @@ import java.util.stream.Collectors;
 public class OrderController {
     private final OrderATService orderATService;
     private final OrderTccService orderTccService;
-    private final StateMachineEngine stateMachineEngine;
     private final OrderSagaService orderSagaService;
 
-    public OrderController(OrderATService orderATService, OrderTccService orderTccService, StateMachineEngine stateMachineEngine, OrderSagaService orderSagaService) {
+    public OrderController(OrderATService orderATService, OrderTccService orderTccService, OrderSagaService orderSagaService) {
         this.orderATService = orderATService;
         this.orderTccService = orderTccService;
-        // StateMachineEngine is injected but not used directly; kept for future extensions
-        this.stateMachineEngine = stateMachineEngine;
         this.orderSagaService = orderSagaService;
     }
 
