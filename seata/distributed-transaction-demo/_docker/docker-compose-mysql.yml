@@ -13,7 +13,7 @@ services:
       LANG: en_US.UTF-8
     command: ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_general_ci"]
     volumes:
-      - ./mysql-init:/docker-entrypoint-initdb.d
+      - ./sql/mysql-init:/docker-entrypoint-initdb.d
       - ${basepath}/mysql/conf/my.cnf:/etc/my.cnf # 挂载 my.cnf 文件到容器的指定路径
       - ${basepath}/mysql/data:/var/lib/mysql # 持久化 MySQL 数据
       - ${basepath}/mysql/log:/var/log/mysql #日志文件目录挂载
@@ -24,3 +24,9 @@ services:
       timeout: 5s
       retries: 10
     restart: unless-stopped
+    networks:
+      - seata-net
+
+networks:
+  seata-net:
+    name: seata-net

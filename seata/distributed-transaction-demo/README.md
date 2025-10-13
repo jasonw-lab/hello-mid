@@ -17,7 +17,7 @@ Spring Boot 3 / Java 17。AT、TCC、SAGA の3モードを同一構成（order, 
 
 
 ## 事前準備（MySQL と Seata Server）
-- MySQL はリポジトリ直下の `_docker/docker-compose-mysql.yml` で起動します（8.0, 3307）。
+- MySQL はリポジトリ直下の `_docker/docker-compose-mysql.yml` で起動します（8.0, 3307, Apple Silicon/M1 対応）。
   ```bash
   cd _docker
   docker compose -f docker-compose-mysql.yml up -d
@@ -30,7 +30,15 @@ Spring Boot 3 / Java 17。AT、TCC、SAGA の3モードを同一構成（order, 
   - host: 127.0.0.1
   - port: 3307
   - user: root / pass: 123456
-- Seata Server は 127.0.0.1:8091 で稼働させてください（本デモのプロファイル設定は registry=config=file, grouplist=127.0.0.1:8091 を前提にしています）。
+- Seata Server は `_docker/docker-compose-seata.yml` で起動します（2.0.0, Apple Silicon/M1 対応）。
+  ```bash
+  cd _docker
+  docker compose -f docker-compose-seata.yml up -d
+  ```
+  - コンソール: http://127.0.0.1:7091
+  - サーバーポート: 8091（application.yml の既定: server.port 7091 → service-port 8091）
+  - ログ: `${basepath}/seata/logs` にホスト共有（`.env` の basepath を参照）
+  - コンフィグ: `_docker/seata-2.0.0/conf/application.yml`（添付ファイルをベースに file/db モードで構成）
 
 ## ビルド/基本テスト
 各サービスは Spring Boot アプリとしてビルドできます。現時点の自動テストは Actuator のヘルスのみです。
