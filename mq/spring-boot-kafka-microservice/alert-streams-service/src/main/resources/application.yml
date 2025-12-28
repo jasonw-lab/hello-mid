@@ -1,0 +1,12 @@
+spring:
+  profiles:
+    active: local
+
+kafka:
+  bootstrap-servers: localhost:9092
+alert:
+  t_confirm_seconds: 30
+  t_pay_seconds: 30
+  punctuate_interval_seconds: 10
+
+
