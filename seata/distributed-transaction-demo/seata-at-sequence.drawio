@@ -1,0 +1,72 @@
+<mxfile host="app.diagrams.net" modified="2025-09-17T22:38:00.000Z" agent="JetBrains-AI-Junie" version="22.1.3" type="device">
+  <diagram id="seq1" name="Seata AT Sequence">
+    <mxGraphModel dx="1080" dy="720" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Lifelines -->
+        <mxCell id="ll_order" value="order-service" style="shape=umlLifeline;whiteSpace=wrap;html=1;outlineConnect=0;container=1;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="80" y="20" width="140" height="540" as="geometry"/>
+        </mxCell>
+        <mxCell id="ll_storage" value="storage-service" style="shape=umlLifeline;whiteSpace=wrap;html=1;outlineConnect=0;container=1;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="300" y="20" width="140" height="540" as="geometry"/>
+        </mxCell>
+        <mxCell id="ll_account" value="account-service" style="shape=umlLifeline;whiteSpace=wrap;html=1;outlineConnect=0;container=1;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="520" y="20" width="140" height="540" as="geometry"/>
+        </mxCell>
+        <mxCell id="ll_seata" value="seata server (TC)" style="shape=umlLifeline;whiteSpace=wrap;html=1;outlineConnect=0;container=1;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="740" y="20" width="160" height="540" as="geometry"/>
+        </mxCell>
+
+        <!-- Messages -->
+        <mxCell id="m1" value="1. GlobalBegin (xid)" style="endArrow=block;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="ll_order" target="ll_seata">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="m2" value="2. POST /api/storage/deduct\n(productId, count)" style="endArrow=block;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="ll_order" target="ll_storage">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="m3" value="2.1 BranchRegister (AT)" style="endArrow=block;html=1;rounded=0;dashed=1;strokeWidth=1;" edge="1" parent="1" source="ll_storage" target="ll_seata">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="m3b" value="2.2 UPDATE storage, insert undo_log" style="endArrow=open;startArrow=none;html=1;rounded=0;dashed=1;strokeWidth=1;strokeColor=#888888;" edge="1" parent="1" source="ll_storage" target="ll_storage">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="m4" value="3. POST /api/account/debit\n(userId, amount)" style="endArrow=block;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="ll_order" target="ll_account">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="m5" value="3.1 BranchRegister (AT)" style="endArrow=block;html=1;rounded=0;dashed=1;strokeWidth=1;" edge="1" parent="1" source="ll_account" target="ll_seata">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="m5b" value="3.2 UPDATE account, insert undo_log" style="endArrow=open;startArrow=none;html=1;rounded=0;dashed=1;strokeWidth=1;strokeColor=#888888;" edge="1" parent="1" source="ll_account" target="ll_account">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="m6a" value="4. INSERT order (status=0)" style="endArrow=open;startArrow=none;html=1;rounded=0;dashed=1;strokeWidth=1;strokeColor=#888888;" edge="1" parent="1" source="ll_order" target="ll_order">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="m6b" value="5. UPDATE order status=CONFIRMED" style="endArrow=open;startArrow=none;html=1;rounded=0;dashed=1;strokeWidth=1;strokeColor=#888888;" edge="1" parent="1" source="ll_order" target="ll_order">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="m7" value="6. GlobalCommit" style="endArrow=block;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="ll_order" target="ll_seata">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="m8" value="6.1 BranchCommit" style="endArrow=block;html=1;rounded=0;dashed=1;strokeWidth=1;" edge="1" parent="1" source="ll_seata" target="ll_storage">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="m9" value="6.2 BranchCommit" style="endArrow=block;html=1;rounded=0;dashed=1;strokeWidth=1;" edge="1" parent="1" source="ll_seata" target="ll_account">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Rollback note -->
+        <mxCell id="noteRb" value="異常系: いずれかが失敗→ GlobalRollback → BranchRollback(storage/account)\n(在庫・口座は undo_log から補償、注文は未確定/ロールバック)" style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2BC;strokeColor=#C0C0C0;" vertex="1" parent="1">
+          <mxGeometry x="80" y="580" width="820" height="80" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
