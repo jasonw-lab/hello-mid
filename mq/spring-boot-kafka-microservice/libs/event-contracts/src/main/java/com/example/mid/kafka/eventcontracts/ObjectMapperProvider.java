@@ -5,20 +5,20 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 public final class ObjectMapperProvider {
-    private static final ObjectMapper MAPPER = createMapper();
+  private static final ObjectMapper MAPPER = createMapper();
 
-    private static ObjectMapper createMapper() {
-        ObjectMapper m = new ObjectMapper();
-        m.registerModule(new JavaTimeModule());
-        m.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        return m;
-    }
+  private static ObjectMapper createMapper() {
+    ObjectMapper m = new ObjectMapper();
+    m.registerModule(new JavaTimeModule());
+    m.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    return m;
+  }
 
-    public static ObjectMapper get() {
-        return MAPPER;
-    }
+  public static ObjectMapper get() {
+    return MAPPER;
+  }
 
-    private ObjectMapperProvider() {}
+  private ObjectMapperProvider() {}
 }
 
 
