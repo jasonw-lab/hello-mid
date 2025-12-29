@@ -7,12 +7,12 @@ import com.example.mid.kafka.eventcontracts.model.AlertRaisedEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.streams.KeyValue;
+import org.apache.kafka.streams.kstream.Transformer;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.processor.PunctuationType;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.processor.To;
-import org.apache.kafka.streams.processor.AbstractProcessor;
 
 import java.time.Instant;
 import java.time.Duration;
@@ -30,7 +30,7 @@ import java.util.UUID;
  * - Alerts are emitted to the topic defined in TopicNames.ALERTS (key=orderId, value=AlertRaised JSON).
  * - Punctuator frequency is set via punctuateIntervalMs (10s in PoC); shorter for testing.
  */
-public class OrderPaymentTransformer extends AbstractProcessor<String, String> {
+public class OrderPaymentTransformer implements Transformer<String, String, KeyValue<String, String>> {
     private ProcessorContext context;
     private KeyValueStore<String, String> store;
     private final String storeName;
@@ -49,7 +49,7 @@ public class OrderPaymentTransformer extends AbstractProcessor<String, String> {
         this.store = (KeyValueStore<String, String>) context.getStateStore(storeName);
 
         // Schedule punctuator for scanning deadlines and emitting Rule A/B alerts.
-        context.schedule(punctuateIntervalMs, PunctuationType.WALL_CLOCK_TIME, timestamp -> {
+        context.schedule(Duration.ofMillis(punctuateIntervalMs), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
             try {
                 long now = Instant.now().toEpochMilli();
                 KeyValueIterator<String, String> iter = store.all();
@@ -83,8 +83,8 @@ public class OrderPaymentTransformer extends AbstractProcessor<String, String> {
     }
 
     @Override
-    public void process(String key, String value) {
-        if (key == null || value == null) return;
+    public KeyValue<String, String> transform(String key, String value) {
+        if (key == null || value == null) return null;
         try {
             JsonNode node = mapper.readTree(value);
             String eventType = node.has("eventType") ? node.get("eventType").asText() : null;
@@ -120,6 +120,8 @@ public class OrderPaymentTransformer extends AbstractProcessor<String, String> {
         } catch (Exception ex) {
             // ignore parse errors in PoC; add logging/metrics in production
         }
+        // No downstream KeyValue returned because alerts are forwarded directly
+        return null;
     }
 
     /**

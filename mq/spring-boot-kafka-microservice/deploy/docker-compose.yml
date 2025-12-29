@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  redpanda:
+    image: vectorized/redpanda:latest
+    container_name: redpanda
+    command: >
+      redpanda start --overprovisioned --smp 1 --memory 1G --reserve-memory 0M --node-id 0 --check=false
+    ports:
+      - "9092:9092"
+      - "9644:9644"
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: redpanda:9092
+
+  create-topics:
+    image: vectorized/redpanda:latest
+    depends_on:
+      - redpanda
+    entrypoint: ["/bin/bash", "/scripts/create-topics.sh"]
+    volumes:
+      - ./deploy/create-topics.sh:/scripts/create-topics.sh
+    restart: "no"
+
+volumes:
+  redpanda-data:
+
+
