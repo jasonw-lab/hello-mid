@@ -12,9 +12,9 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
   datasource:
-    url: ${ALERT_DB_URL:jdbc:mysql://localhost:3306/ec_system?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    url: ${ALERT_DB_URL:jdbc:mysql://localhost:3307/ec_system?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
     username: ${ALERT_DB_USER:root}
-    password: ${ALERT_DB_PASSWORD:}
+    password: ${ALERT_DB_PASSWORD:123456}
 
 logging:
   level:

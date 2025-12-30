@@ -154,10 +154,10 @@ if [ "$RUN_RULE_C" = true ]; then
     echo "期待結果: 2回目のPaymentSucceededで即座にAlertRaised(rule=C, severity=P1)が発生"
     echo ""
 
-    send_payment_succeeded "O-C-001" "P-C-001"
+    send_payment_succeeded "O-C-002" "P-C-002"
     wait_seconds 2 "イベント処理待機"
 
-    send_payment_succeeded "O-C-001" "P-C-002"
+    send_payment_succeeded "O-C-002" "P-C-002"
     echo ""
     echo "🎯 Rule C テスト完了 - alerts.order_payment_inconsistency.v1 を確認してください"
 fi
@@ -250,7 +250,7 @@ echo ""
 if [ $test_count -gt 0 ]; then
     echo "📊 期待されるAlertRaisedイベント:"
     if [ "$RUN_RULE_C" = true ]; then
-        echo "  - Rule C: {\"eventType\":\"AlertRaised\",\"rule\":\"C\",\"severity\":\"P1\",\"orderId\":\"O-C-001\",...}"
+        echo "  - Rule C: {\"eventType\":\"AlertRaised\",\"rule\":\"C\",\"severity\":\"P1\",\"orderId\":\"O-C-002\",...}"
     fi
     if [ "$RUN_RULE_A" = true ]; then
         echo "  - Rule A: {\"eventType\":\"AlertRaised\",\"rule\":\"A\",\"severity\":\"P2\",\"orderId\":\"O-A-001\",...}"
