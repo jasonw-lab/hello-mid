@@ -6,16 +6,20 @@ import com.example.mid.kafka.eventcontracts.ObjectMapperProvider;
 import com.example.mid.kafka.eventcontracts.model.AlertRaisedEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.Transformer;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.processor.PunctuationType;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
-import org.apache.kafka.streams.processor.To;
 
-import java.time.Instant;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 /**
@@ -35,6 +39,7 @@ import java.util.UUID;
  */
 public class OrderPaymentTransformer
     implements Transformer<String, String, KeyValue<String, String>> {
+  private static final Logger log = LoggerFactory.getLogger(OrderPaymentTransformer.class);
   private ProcessorContext context;
   private KeyValueStore<String, String> store;
   private final String storeName;
@@ -65,12 +70,14 @@ public class OrderPaymentTransformer
           // Rule A: Payment arrived but OrderConfirmed did not within T_confirm
           if (s.ruleADeadlineEpochMs != null && !s.ruleAFired && now >= s.ruleADeadlineEpochMs && s.orderConfirmedAt == null) {
             emitAlert(key, "A", "P2", s);
+            log.info("rule A fired: orderId={} deadlineEpochMs={} nowEpochMs={}", key, s.ruleADeadlineEpochMs, now);
             s.ruleAFired = true;
             changed = true;
           }
           // Rule B: OrderConfirmed arrived but PaymentSucceeded did not within T_pay
           if (s.ruleBDeadlineEpochMs != null && !s.ruleBFired && now >= s.ruleBDeadlineEpochMs && s.paymentSucceededAt == null) {
             emitAlert(key, "B", "P2", s);
+            log.info("rule B fired: orderId={} deadlineEpochMs={} nowEpochMs={}", key, s.ruleBDeadlineEpochMs, now);
             s.ruleBFired = true;
             changed = true;
           }
@@ -106,11 +113,12 @@ public class OrderPaymentTransformer
         // Rule C: multiple payments for same order -> immediate high-severity alert
         if (s.paymentSuccessCount >= 2 && !s.ruleCFired) {
           emitAlert(key, "C", "P1", s);
+          log.info("rule C fired: orderId={} paymentSuccessCount={}", key, s.paymentSuccessCount);
           s.ruleCFired = true;
         }
         // If order not confirmed yet, set Rule A deadline (paymentSucceededAt + T_confirm)
         if (s.orderConfirmedAt == null && s.paymentSucceededAt != null) {
-          long deadline = Instant.parse(s.paymentSucceededAt).plusSeconds(30).toEpochMilli();
+          long deadline = parseEventTime(s.paymentSucceededAt).plusSeconds(30).toEpochMilli();
           s.ruleADeadlineEpochMs = deadline;
         }
       } else if ("OrderConfirmed".equals(eventType)) {
@@ -119,7 +127,7 @@ public class OrderPaymentTransformer
           s.orderConfirmedAt = occurredAt;
         }
         if (s.paymentSucceededAt == null && s.orderConfirmedAt != null) {
-          long deadline = Instant.parse(s.orderConfirmedAt).plusSeconds(30).toEpochMilli();
+          long deadline = parseEventTime(s.orderConfirmedAt).plusSeconds(30).toEpochMilli();
           s.ruleBDeadlineEpochMs = deadline;
         }
       }
@@ -151,8 +159,8 @@ public class OrderPaymentTransformer
       facts.paymentSuccessCount = s.paymentSuccessCount;
       a.setFacts(facts);
       String json = mapper.writeValueAsString(a);
-      // Forward to alerts topic (key=orderId)
-      context.forward(orderId, json, To.child(TopicNames.ALERTS));
+      // Forward to downstream sink (alerts topic configured in topology).
+      context.forward(orderId, json);
     } catch (Exception ex) {
       // ignore in PoC; production should record metrics/log errors
     }
@@ -162,6 +170,20 @@ public class OrderPaymentTransformer
   public void close() {
     // noop for PoC
   }
+
+  private Instant parseEventTime(String timestamp) {
+    if (timestamp == null || timestamp.isBlank()) {
+      return Instant.now();
+    }
+    try {
+      return Instant.parse(timestamp);
+    } catch (Exception ex) {
+      try {
+        LocalDateTime local = LocalDateTime.parse(timestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        return local.atZone(ZoneId.systemDefault()).toInstant();
+      } catch (Exception ignored) {
+        return Instant.now();
+      }
+    }
+  }
 }
-
-

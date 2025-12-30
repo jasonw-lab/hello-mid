@@ -36,12 +36,14 @@ public class AlertStreamsConfig {
     KStream<String, String> orders = builder.stream(TopicNames.ORDERS);
     KStream<String, String> payments = builder.stream(TopicNames.PAYMENTS);
 
-    // Merge and apply transformer which will emit alerts to the alerts topic.
-    orders.merge(payments).transform(() -> new OrderPaymentTransformer(STORE_NAME), STORE_NAME);
+    // Merge and apply transformer; alerts are forwarded via ProcessorContext.
+    orders
+        .merge(payments)
+        .transform(() -> new OrderPaymentTransformer(STORE_NAME), STORE_NAME)
+        .to(TopicNames.ALERTS);
 
     // Return reference to orders stream (not used further in PoC)
     return orders;
   }
 }
-
 
