@@ -1,12 +1,20 @@
 spring:
+  application:
+    name: alert-streams-service
   profiles:
     active: local
+  kafka:
+    # Local Docker compose exposes Kafka on 29092 (see docker-compose-env.yml).
+    bootstrap-servers: localhost:29092
+    streams:
+      application-id: alert-streams-service
+      # Use per-profile state dir to avoid leftover lock files between runs.
+      state-dir: "${java.io.tmpdir}/kafka-streams/${spring.application.name}-${spring.profiles.active:default}"
+      properties:
+        default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        default.value.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
 
-kafka:
-  bootstrap-servers: localhost:9092
 alert:
   t_confirm_seconds: 30
   t_pay_seconds: 30
   punctuate_interval_seconds: 10
-
-

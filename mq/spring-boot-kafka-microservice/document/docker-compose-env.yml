@@ -26,7 +26,7 @@ services:
       
       # Topic configuration
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_CREATE_TOPICS: "news:1:3,order-topic:1:1,monitor-topic:1:1,pageview-topic:1:1,suspicious-user-topic:1:1,payment-confirmation-topic:1:1"
+      KAFKA_CREATE_TOPICS: "news:1:3,order-topic:1:1,monitor-topic:1:1,pageview-topic:1:1,suspicious-user-topic:1:1,payment-confirmation-topic:1:1,orders.events.v1:1:1,payments.events.v1:1:1,alerts.order_payment_inconsistency.v1:1:1"
       KAFKA_OFFSETS_RETENTION_MINUTES: 60
       
   kafka-ui:

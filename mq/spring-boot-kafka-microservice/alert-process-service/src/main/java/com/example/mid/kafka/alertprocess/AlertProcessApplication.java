@@ -1,15 +1,11 @@
-package com.example.mid.kafka.alertstreams;
+package com.example.mid.kafka.alertprocess;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.kafka.annotation.EnableKafkaStreams;
 
 @SpringBootApplication(scanBasePackages = "com.example.mid.kafka")
-@EnableKafkaStreams
-public class AlertStreamsApplication {
+public class AlertProcessApplication {
   public static void main(String[] args) {
-    SpringApplication.run(AlertStreamsApplication.class, args);
+    SpringApplication.run(AlertProcessApplication.class, args);
   }
 }
-
-
